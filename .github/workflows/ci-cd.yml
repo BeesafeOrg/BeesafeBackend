@@ -21,8 +21,8 @@ jobs:
             -   name: Install dependencies
                 run: npm install
 
-#            -   name: Echo Env File
-#                run: echo ${{ secrets.ENV_FILE }} | base64 --decode > ./.env
+            #            -   name: Echo Env File
+            #                run: echo ${{ secrets.ENV_FILE }} | base64 --decode > ./.env
 
             -   name: Build Docker image
                 run: |
@@ -38,3 +38,20 @@ jobs:
                 run: |
                     docker tag beesafe ${{ secrets.DOCKERHUB_USERNAME }}/beesafe:latest
                     docker push ${{ secrets.DOCKERHUB_USERNAME }}/beesafe:latest
+    cd:
+        needs: ci
+        runs-on: ubuntu-latest
+
+        steps:
+            -   name: Deploy to GCP via SSH
+                uses: appleboy/ssh-action@master
+                with:
+                    host: ${{ secrets.GCP_HOST }}
+                    username: ${{ secrets.GCP_USERNAME }}
+                    key: ${{ secrets.GCP_SSH_KEY }}
+                    script: |
+                        cd /home/ubuntu/app
+                        docker compose pull
+                        docker compose down
+                        docker compose up -d
+                        docker image prune -af
