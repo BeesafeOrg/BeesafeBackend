@@ -21,8 +21,8 @@ jobs:
             -   name: Install dependencies
                 run: npm install
 
-            #            -   name: Echo Env File
-            #                run: echo ${{ secrets.ENV_FILE }} | base64 --decode > ./.env
+            -   name: Echo Env File
+                run: echo ${{ secrets.ENV_FILE }} | base64 --decode > ./.env
 
             -   name: Build Docker image
                 run: |
