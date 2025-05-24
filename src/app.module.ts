@@ -1,8 +1,28 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
+import { DatabaseModule } from './common/database/database.module';
+import { ConfigModule } from '@nestjs/config';
+import { MemberModule } from './domain/member/member.module';
+import { HiveReportModule } from './domain/hive-report/hive-report.module';
+import * as Joi from '@hapi/joi';
 
 @Module({
-  imports: [],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+      validationSchema: Joi.object({
+        MYSQL_HOST: Joi.string().required(),
+        MYSQL_PORT: Joi.number().required(),
+        MYSQL_USER: Joi.string().required(),
+        MYSQL_PASS: Joi.string().required(),
+        MYSQL_NAME: Joi.string().required(),
+      }),
+    }),
+    DatabaseModule,
+    MemberModule,
+    HiveReportModule,
+  ],
   controllers: [AppController],
   providers: [],
 })
