@@ -11,6 +11,9 @@ export class Member extends BaseEntity {
   @Column({ type: 'enum', enum: Role })
   role: Role;
 
+  @Column({ unique: true })
+  email: string;
+
   @Column({ length: 40 })
   nickname: string;
 
