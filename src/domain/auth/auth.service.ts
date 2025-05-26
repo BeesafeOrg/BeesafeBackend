@@ -1,11 +1,9 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { Member } from '../member/entities/member.entity';
-import { Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { JwtResponseDto } from './dto/jwt-response.dto';
+import { MemberService } from '../member/member.service';
 
 @Injectable()
 export class AuthService {
@@ -14,8 +12,7 @@ export class AuthService {
   constructor(
     private readonly http: HttpService,
     private readonly cs: ConfigService,
-    @InjectRepository(Member)
-    private readonly memberRepo: Repository<Member>,
+    private readonly memberService: MemberService,
   ) {}
 
   async getProfile(accessToken: string): Promise<any> {
@@ -40,9 +37,7 @@ export class AuthService {
     const nickname = kakaoAccount.profile?.nickname;
     const profileImageUrl = kakaoAccount.profile?.profile_image_url;
 
-    let member = await this.memberRepo.findOne({
-      where: { email },
-    });
+    let member = await this.memberService.findByEmail(email);
 
     if (member) {
       let updated = false;
@@ -56,21 +51,13 @@ export class AuthService {
         updated = true;
       }
 
-      return updated ? await this.memberRepo.save(member) : member;
+      return updated ? await this.memberService.save(member) : member;
     } else {
-      const newMember = this.memberRepo.create({
+      return await this.memberService.createAndSave({
         nickname,
         email,
         profileImageUrl,
       });
-      return await this.memberRepo.save(newMember);
     }
-  }
-
-  issueTokens(member: Member) {
-    return {
-      accessToken: '',
-      refreshToken: '',
-    };
   }
 }
