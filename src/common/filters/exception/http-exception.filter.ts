@@ -4,52 +4,58 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { BusinessException } from '../exception/business-exception';
 import { ERROR_META } from '../exception/error-meta';
+import { QueryFailedError } from 'typeorm';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly LOGGER = new Logger('EXCEPTION FILTER');
+
   async catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const isHttpException = exception instanceof HttpException;
-    const isBusinessException = exception instanceof BusinessException;
-    const status: number = isHttpException
-      ? (exception as HttpException).getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let code = ERROR_META.INTERNAL_SERVER_ERROR.code;
+    let message = ERROR_META.INTERNAL_SERVER_ERROR.message;
 
-    console.error(`[${request.method}] ${request.url} →`, exception);
+    Logger.error(exception, `[${request.method}] ${request.url} → ${status}`);
 
-    const payload: Record<string, any> = {
+    /* business */
+    if (exception instanceof BusinessException) {
+      status = exception.getStatus();
+      code = exception.errorNumber;
+      message = exception.message;
+      /* http */
+    } else if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      const res = exception.getResponse();
+      message = typeof res === 'string' ? res : (res as any).message || message;
+      /* database */
+    } else if (exception instanceof QueryFailedError) {
+      status = ERROR_META.DATABASE_ERROR.status;
+      code = ERROR_META.DATABASE_ERROR.code;
+      message = (exception as any).message ?? ERROR_META.DATABASE_ERROR.message;
+      /* dto type */
+    } else if (exception instanceof TypeError) {
+      status = ERROR_META.TYPE_ERROR.status;
+      code = ERROR_META.TYPE_ERROR.code;
+      message = exception.message ?? ERROR_META.TYPE_ERROR.message;
+      /* etc */
+    } else if (exception instanceof Error) {
+      message = exception.message;
+    }
+
+    const payload = {
       method: request.method,
       path: request.url,
       timestamp: new Date().toISOString(),
     };
-
-    if (isBusinessException) {
-      const { message, errorNumber } = exception as BusinessException;
-      response.status(status).json({
-        code: errorNumber,
-        message: message,
-        ...payload,
-      });
-    } else {
-      const exceptionResponse = isHttpException
-        ? (exception as HttpException).getResponse()
-        : { message: ERROR_META['INTERNAL_SERVER_ERROR'].message };
-
-      response.status(status).json({
-        code: ERROR_META.INTERNAL_SERVER_ERROR.code,
-        message:
-          typeof exceptionResponse === 'string'
-            ? exceptionResponse
-            : JSON.stringify(exceptionResponse, null, 2),
-        ...payload,
-      });
-    }
+    response.status(status).json({ code, message, ...payload });
   }
 }
