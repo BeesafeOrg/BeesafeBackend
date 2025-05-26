@@ -35,7 +35,7 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     status: HttpStatus.BAD_REQUEST,
   },
   [ErrorType.TYPE_ERROR]: {
-    code: 40005,
+    code: 40006,
     message: 'Type Error',
     status: HttpStatus.BAD_REQUEST,
   },
@@ -74,7 +74,7 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
 
   /* member */
   [ErrorType.Member_NOT_FOUND]: {
-    code: 41001,
+    code: 42001,
     message: 'Member not found',
     status: HttpStatus.NOT_FOUND,
   },
