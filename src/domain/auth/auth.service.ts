@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { Member } from '../member/entities/member.entity';
 import { HttpService } from '@nestjs/axios';
@@ -12,6 +8,8 @@ import { JwtService } from '@nestjs/jwt';
 import * as uuid from 'uuid';
 import { createHash } from 'crypto';
 import { RedisService } from '../../common/redis/redis.service';
+import { BusinessException } from '../../common/filters/exception/business-exception';
+import { ErrorCode } from '../../common/filters/exception/error-code.enum';
 
 @Injectable()
 export class AuthService {
@@ -36,7 +34,8 @@ export class AuthService {
       return data;
     } catch (e: any) {
       const { error, error_description, error_code } = e?.response?.data;
-      throw new InternalServerErrorException(
+      throw new BusinessException(
+        ErrorCode.KAKAO_LOGIN_FAILED,
         `[${error_code}] ${error} -> ${error_description}`,
       );
     }
@@ -117,7 +116,7 @@ export class AuthService {
     const ownerId = await this.redisService.get<string>(key);
 
     if (ownerId !== memberId) {
-      throw new UnauthorizedException('invalid refresh');
+      throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
     }
 
     await this.redisService.del(key);
