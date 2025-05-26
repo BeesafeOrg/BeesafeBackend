@@ -16,7 +16,6 @@ export interface CommonResponseDto<T = unknown> {
 export class SuccessInterceptor<T>
   implements NestInterceptor<T, CommonResponseDto<T>>
 {
-  // 파라미터 이름을 ctx 로 그대로 사용
   intercept(
     ctx: ExecutionContext,
     next: CallHandler,
