@@ -15,7 +15,8 @@ import { RedisService } from '../../common/redis/redis.service';
 
 @Injectable()
 export class AuthService {
-  private readonly profileUrl = 'https://kapi.kakao.com/v2/user/me';
+  private readonly KAKAO_PROFILE_URL = 'https://kapi.kakao.com/v2/user/me';
+  private readonly JWT_REFRESH_LIST_REDIS_KEY = 'memberRTs';
 
   constructor(
     private readonly http: HttpService,
@@ -28,7 +29,7 @@ export class AuthService {
   async getProfile(accessToken: string): Promise<any> {
     try {
       const { data } = await firstValueFrom(
-        this.http.get(this.profileUrl, {
+        this.http.get(this.KAKAO_PROFILE_URL, {
           headers: { Authorization: `Bearer ${accessToken}` },
         }),
       );
@@ -89,7 +90,11 @@ export class AuthService {
     const ttl = this.getRefreshTokenTtlSec();
 
     await this.redisService.set(key, memberId, { ttl });
-    await this.redisService.pushToSet(`memberRTs:${memberId}`, key, ttl);
+    await this.redisService.pushToSet(
+      `${this.JWT_REFRESH_LIST_REDIS_KEY}:${memberId}`,
+      key,
+      ttl,
+    );
 
     return { accessToken, refreshToken };
   }
@@ -121,7 +126,7 @@ export class AuthService {
   }
 
   async revokeAll(memberId: string) {
-    const listKey = `memberRTs:${memberId}`;
+    const listKey = `${this.JWT_REFRESH_LIST_REDIS_KEY}:${memberId}`;
     const keys = await this.redisService.popAll(listKey);
     if (keys.length) {
       await Promise.all(keys.map((k) => this.redisService.del(k)));
