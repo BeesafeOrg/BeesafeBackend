@@ -9,6 +9,7 @@ import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { RedisModule } from '../../common/redis/redis.module';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
+import { MemberRoleGuard } from './guards/member-role-guard';
 
 @Module({
   imports: [HttpModule, MemberModule, JwtModule.register({}), RedisModule],
@@ -19,7 +20,8 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
     JwtAccessGuard,
     JwtRefreshStrategy,
     JwtRefreshGuard,
+    MemberRoleGuard,
   ],
-  exports: [JwtAccessGuard],
+  exports: [JwtAccessGuard, MemberRoleGuard],
 })
 export class AuthModule {}

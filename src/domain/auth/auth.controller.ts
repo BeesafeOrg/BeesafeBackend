@@ -22,7 +22,7 @@ export class AuthController {
     const profile = await this.authService.getProfile(token);
     const member = await this.authService.upsertMember(profile);
 
-    return await this.authService.issueTokens(member.id);
+    return await this.authService.issueTokens(member);
   }
 
   @Post('refresh')

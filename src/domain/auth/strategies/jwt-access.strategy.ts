@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { MemberRole } from '../../member/constant/member-role.enum';
 
 @Injectable()
 export class JwtAccessStrategy extends PassportStrategy(
@@ -17,7 +18,7 @@ export class JwtAccessStrategy extends PassportStrategy(
     });
   }
 
-  async validate(payload: { sub: string }): Promise<any> {
-    return { memberId: payload.sub };
+  async validate(payload: { sub: string; role: MemberRole }): Promise<any> {
+    return { memberId: payload.sub, role: payload.role };
   }
 }

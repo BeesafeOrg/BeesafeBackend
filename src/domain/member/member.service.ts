@@ -20,10 +20,14 @@ export class MemberService {
     });
   }
 
-  async findById(id: string): Promise<Member | null> {
-    return await this.memberRepo.findOne({
+  async findByIdOrThrowException(id: string): Promise<Member> {
+    const member = await this.memberRepo.findOne({
       where: { id },
     });
+    if (!member) {
+      throw new BusinessException(ErrorType.Member_NOT_FOUND);
+    }
+    return member;
   }
 
   async save(member: Member): Promise<Member> {
