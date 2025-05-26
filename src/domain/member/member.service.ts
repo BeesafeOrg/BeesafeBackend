@@ -3,6 +3,9 @@ import { Member } from './entities/member.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateMemberDto } from './dto/create-member.dto';
+import { BusinessException } from '../../common/filters/exception/business-exception';
+import { ErrorType } from '../../common/filters/exception/error-code.enum';
+import { MemberRole } from './constant/member-role.enum';
 
 @Injectable()
 export class MemberService {
@@ -17,6 +20,12 @@ export class MemberService {
     });
   }
 
+  async findById(id: string): Promise<Member | null> {
+    return await this.memberRepo.findOne({
+      where: { id },
+    });
+  }
+
   async save(member: Member): Promise<Member> {
     return await this.memberRepo.save(member);
   }
@@ -26,5 +35,14 @@ export class MemberService {
       ...dto,
     });
     return await this.save(newMember);
+  }
+
+  async setRole(memberId: string, role: MemberRole) {
+    const affected = await this.memberRepo.update(memberId, {
+      role,
+    });
+    if (!affected) {
+      throw new BusinessException(ErrorType.Member_NOT_FOUND);
+    }
   }
 }

@@ -1,22 +1,22 @@
 import { HttpException } from '@nestjs/common';
-import { ErrorCode } from './error-code.enum';
+import { ErrorType } from './error-code.enum';
 import { ERROR_META } from './error-meta';
 
 export class BusinessException extends HttpException {
-  readonly errorCode: ErrorCode;
+  readonly errorType: ErrorType;
   readonly errorNumber: number;
 
-  constructor(errorCode: ErrorCode, overrideMessage?: string) {
-    const { status, code, message } = ERROR_META[errorCode];
+  constructor(errorType: ErrorType, overrideMessage?: string) {
+    const { status, code, message } = ERROR_META[errorType];
     super(
       {
-        errorCode,
-        errorNumber: code,
+        errorType,
+        code,
         message: overrideMessage ?? message,
       },
       status,
     );
-    this.errorCode = errorCode;
+    this.errorType = errorType;
     this.errorNumber = code;
   }
 }

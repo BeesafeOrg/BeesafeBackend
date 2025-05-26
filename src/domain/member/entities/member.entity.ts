@@ -3,13 +3,13 @@ import { Column, Entity, OneToMany } from 'typeorm';
 import { InterestArea } from './interest-area.entity';
 import { HiveReport } from '../../hive-report/entities/hive-report.entity';
 import { Reward } from '../../hive-report/entities/reward.entity';
-import { Role } from '../constant/role.enum';
+import { MemberRole } from '../constant/member-role.enum';
 import { Notification } from './notification.entity';
 
 @Entity('member')
 export class Member extends BaseEntity {
-  @Column({ type: 'enum', enum: Role })
-  role: Role;
+  @Column({ type: 'enum', enum: MemberRole, nullable: true })
+  role?: MemberRole;
 
   @Column({ unique: true })
   email: string;
