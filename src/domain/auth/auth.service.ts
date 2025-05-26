@@ -9,7 +9,8 @@ import * as uuid from 'uuid';
 import { createHash } from 'crypto';
 import { RedisService } from '../../common/redis/redis.service';
 import { BusinessException } from '../../common/filters/exception/business-exception';
-import { ErrorCode } from '../../common/filters/exception/error-code.enum';
+import { ErrorType } from '../../common/filters/exception/error-code.enum';
+import { SetMemberRoleDto } from './dto/set-member-role.dto';
 
 @Injectable()
 export class AuthService {
@@ -35,7 +36,7 @@ export class AuthService {
     } catch (e: any) {
       const { error, error_description, error_code } = e?.response?.data;
       throw new BusinessException(
-        ErrorCode.KAKAO_LOGIN_FAILED,
+        ErrorType.KAKAO_LOGIN_FAILED,
         `[${error_code}] ${error} -> ${error_description}`,
       );
     }
@@ -116,7 +117,7 @@ export class AuthService {
     const ownerId = await this.redisService.get<string>(key);
 
     if (ownerId !== memberId) {
-      throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+      throw new BusinessException(ErrorType.INVALID_REFRESH_TOKEN);
     }
 
     await this.redisService.del(key);
@@ -130,5 +131,9 @@ export class AuthService {
     if (keys.length) {
       await Promise.all(keys.map((k) => this.redisService.del(k)));
     }
+  }
+
+  async setMemberRole(memberId: string, memberRoleDto: SetMemberRoleDto) {
+    await this.memberService.setRole(memberId, memberRoleDto.role);
   }
 }
