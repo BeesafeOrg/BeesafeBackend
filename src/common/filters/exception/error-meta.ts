@@ -34,11 +34,6 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Database Error',
     status: HttpStatus.BAD_REQUEST,
   },
-  [ErrorType.TYPE_ERROR]: {
-    code: 40006,
-    message: 'Type Error',
-    status: HttpStatus.BAD_REQUEST,
-  },
   [ErrorType.INTERNAL_SERVER_ERROR]: {
     code: 50000,
     message: 'Internal server error',

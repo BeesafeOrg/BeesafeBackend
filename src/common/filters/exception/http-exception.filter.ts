@@ -3,7 +3,6 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
-  HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
@@ -20,9 +19,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let code = ERROR_META.INTERNAL_SERVER_ERROR.code;
-    let message = ERROR_META.INTERNAL_SERVER_ERROR.message;
+    let status = ERROR_META.INVALID_REQUEST.status;
+    let code = ERROR_META.INVALID_REQUEST.code;
+    let message = ERROR_META.INVALID_REQUEST.message;
 
     Logger.error(exception, `[${request.method}] ${request.url} → ${status}`);
 
@@ -43,6 +42,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message = (exception as any).message ?? ERROR_META.DATABASE_ERROR.message;
       /* etc */
     } else if (exception instanceof Error) {
+      status = ERROR_META.INTERNAL_SERVER_ERROR.status;
+      code = ERROR_META.INTERNAL_SERVER_ERROR.code;
       message = exception.message;
     }
 
