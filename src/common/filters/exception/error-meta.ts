@@ -66,6 +66,11 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Expired access token',
     status: HttpStatus.UNAUTHORIZED,
   },
+  [ErrorType.FORBIDDEN_RESOURCE]: {
+    code: 41006,
+    message: 'Forbidden resource (Invalid role)',
+    status: HttpStatus.FORBIDDEN,
+  },
 
   /* member */
   [ErrorType.Member_NOT_FOUND]: {

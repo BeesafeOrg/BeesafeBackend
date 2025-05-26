@@ -74,7 +74,7 @@ export class AuthService {
 
   async issueTokens(member: Member) {
     const accessToken = await this.sign(
-      { sub: member.id },
+      { sub: member.id, role: member.role },
       this.configService.get<string>('JWT_ACCESS_SECRET'),
       this.configService.get<string>('JWT_ACCESS_EXPIRES'),
     );
