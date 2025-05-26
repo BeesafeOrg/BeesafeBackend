@@ -1,6 +1,7 @@
 import { Controller, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
+import { JwtAccessGuard } from './guards/jwt-access.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -19,5 +20,11 @@ export class AuthController {
   async refresh(@Req() req: any) {
     const { memberId, jti } = req.user;
     return await this.authService.rotate(memberId, jti);
+  }
+
+  @Post('logout')
+  @UseGuards(JwtAccessGuard)
+  async logout(@Req() req: any) {
+    await this.authService.revokeAll(req.user.memberId);
   }
 }
