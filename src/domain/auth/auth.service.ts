@@ -6,6 +6,8 @@ import { ConfigService } from '@nestjs/config';
 import { MemberService } from '../member/member.service';
 import { JwtService } from '@nestjs/jwt';
 import * as uuid from 'uuid';
+import { createHash } from 'crypto';
+import { RedisService } from '../../common/redis/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +18,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly memberService: MemberService,
     private readonly jwtService: JwtService,
+    private readonly redisService: RedisService,
   ) {}
 
   async getProfile(accessToken: string): Promise<any> {
@@ -64,10 +67,6 @@ export class AuthService {
     }
   }
 
-  private async sign(payload, secret, exp) {
-    return this.jwtService.signAsync(payload, { secret, expiresIn: exp });
-  }
-
   async issueTokens(member: Member) {
     const accessToken = await this.sign(
       { sub: member.id },
@@ -75,13 +74,32 @@ export class AuthService {
       this.configService.get<string>('JWT_ACCESS_EXPIRES'),
     );
 
-    const jti = uuid.v1(); // 토큰 ID
+    const refreshTokenId = uuid.v1(); // 토큰 ID
     const refreshToken = await this.sign(
-      { sub: member.id, jti },
+      { sub: member.id, jti: refreshTokenId },
       this.configService.get('JWT_REFRESH_SECRET'),
       this.configService.get('JWT_REFRESH_EXPIRES'),
     );
 
+    const key = this.createRefreshTokenRedisKey(refreshTokenId);
+    const ttl = this.getRefreshTokenTtlSec();
+
+    await this.redisService.set(key, member.id, { ttl });
+    await this.redisService.pushToSet(`memberRTs:${member.id}`, key, ttl);
+
     return { accessToken, refreshToken };
+  }
+
+  private async sign(payload, secret, exp) {
+    return this.jwtService.signAsync(payload, { secret, expiresIn: exp });
+  }
+
+  private createRefreshTokenRedisKey(jti: string) {
+    const hash = createHash('sha256').update(jti).digest('hex');
+    return `rt:${hash}`;
+  }
+
+  private getRefreshTokenTtlSec() {
+    return <number>this.configService.get('JWT_REFRESH_EXPIRES') / 1000;
   }
 }
