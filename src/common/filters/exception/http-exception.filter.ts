@@ -41,11 +41,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       status = ERROR_META.DATABASE_ERROR.status;
       code = ERROR_META.DATABASE_ERROR.code;
       message = (exception as any).message ?? ERROR_META.DATABASE_ERROR.message;
-      /* dto type */
-    } else if (exception instanceof TypeError) {
-      status = ERROR_META.TYPE_ERROR.status;
-      code = ERROR_META.TYPE_ERROR.code;
-      message = exception.message ?? ERROR_META.TYPE_ERROR.message;
       /* etc */
     } else if (exception instanceof Error) {
       message = exception.message;
