@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MemberModule } from './domain/member/member.module';
 import { HiveReportModule } from './domain/hive-report/hive-report.module';
 import { AuthModule } from './domain/auth/auth.module';
+import { RedisModule } from './common/redis/redis.module';
 import * as Joi from '@hapi/joi';
 
 @Module({
@@ -18,12 +19,21 @@ import * as Joi from '@hapi/joi';
         MYSQL_USER: Joi.string().required(),
         MYSQL_PASS: Joi.string().required(),
         MYSQL_NAME: Joi.string().required(),
+
+        JWT_ACCESS_SECRET: Joi.string().required(),
+        JWT_ACCESS_EXPIRES: Joi.number().required(),
+        JWT_REFRESH_SECRET: Joi.string().required(),
+        JWT_REFRESH_EXPIRES: Joi.number().required(),
+
+        REDIS_URL: Joi.string().required(),
+        REDIS_TTL: Joi.number().required(),
       }),
     }),
     DatabaseModule,
     MemberModule,
     HiveReportModule,
     AuthModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [],

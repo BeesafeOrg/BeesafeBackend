@@ -6,9 +6,10 @@ import { MemberModule } from '../member/member.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtAccessGuard } from './guards/jwt-access.guard';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
+import { RedisModule } from '../../common/redis/redis.module';
 
 @Module({
-  imports: [HttpModule, MemberModule, JwtModule.register({})],
+  imports: [HttpModule, MemberModule, JwtModule.register({}), RedisModule],
   controllers: [AuthController],
   providers: [AuthService, JwtAccessGuard, JwtAccessStrategy],
   exports: [JwtAccessGuard],
