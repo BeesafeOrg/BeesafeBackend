@@ -4,6 +4,7 @@ import { DatabaseModule } from './common/database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { MemberModule } from './domain/member/member.module';
 import { HiveReportModule } from './domain/hive-report/hive-report.module';
+import { AuthModule } from './domain/auth/auth.module';
 import * as Joi from '@hapi/joi';
 
 @Module({
@@ -22,6 +23,7 @@ import * as Joi from '@hapi/joi';
     DatabaseModule,
     MemberModule,
     HiveReportModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [],
