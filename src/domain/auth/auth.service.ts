@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { Member } from '../member/entities/member.entity';
 import { HttpService } from '@nestjs/axios';
@@ -67,25 +71,25 @@ export class AuthService {
     }
   }
 
-  async issueTokens(member: Member) {
+  async issueTokens(memberId: string) {
     const accessToken = await this.sign(
-      { sub: member.id },
+      { sub: memberId },
       this.configService.get<string>('JWT_ACCESS_SECRET'),
       this.configService.get<string>('JWT_ACCESS_EXPIRES'),
     );
 
-    const refreshTokenId = uuid.v1(); // 토큰 ID
+    const refreshTokenId = uuid.v1();
     const refreshToken = await this.sign(
-      { sub: member.id, jti: refreshTokenId },
+      { sub: memberId, jti: refreshTokenId },
       this.configService.get('JWT_REFRESH_SECRET'),
       this.configService.get('JWT_REFRESH_EXPIRES'),
     );
 
-    const key = this.createRefreshTokenRedisKey(refreshTokenId);
+    const key = this.getRefreshTokenRedisKey(refreshTokenId);
     const ttl = this.getRefreshTokenTtlSec();
 
-    await this.redisService.set(key, member.id, { ttl });
-    await this.redisService.pushToSet(`memberRTs:${member.id}`, key, ttl);
+    await this.redisService.set(key, memberId, { ttl });
+    await this.redisService.pushToSet(`memberRTs:${memberId}`, key, ttl);
 
     return { accessToken, refreshToken };
   }
@@ -94,12 +98,33 @@ export class AuthService {
     return this.jwtService.signAsync(payload, { secret, expiresIn: exp });
   }
 
-  private createRefreshTokenRedisKey(jti: string) {
-    const hash = createHash('sha256').update(jti).digest('hex');
+  private getRefreshTokenRedisKey(refreshTokenId: string) {
+    const hash = createHash('sha256').update(refreshTokenId).digest('hex');
     return `rt:${hash}`;
   }
 
   private getRefreshTokenTtlSec() {
     return <number>this.configService.get('JWT_REFRESH_EXPIRES') / 1000;
+  }
+
+  async rotate(memberId: string, oldRefreshTokenRedisId: string) {
+    const key = this.getRefreshTokenRedisKey(oldRefreshTokenRedisId);
+    const ownerId = await this.redisService.get<string>(key);
+
+    if (ownerId !== memberId) {
+      throw new UnauthorizedException('invalid refresh');
+    }
+
+    await this.redisService.del(key);
+    await this.revokeAll(memberId);
+    return this.issueTokens(memberId);
+  }
+
+  async revokeAll(memberId: string) {
+    const listKey = `memberRTs:${memberId}`;
+    const keys = await this.redisService.popAll(listKey);
+    if (keys.length) {
+      await Promise.all(keys.map((k) => this.redisService.del(k)));
+    }
   }
 }

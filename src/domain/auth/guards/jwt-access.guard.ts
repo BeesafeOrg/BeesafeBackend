@@ -8,13 +8,10 @@ export class JwtAccessGuard extends AuthGuard('jwt-access') {
     if (info instanceof TokenExpiredError) {
       throw new BadRequestException('access expired');
     }
-
     if (err) throw err;
-
     if (!user) {
       throw new BadRequestException('invalid access');
     }
-
     return user;
   }
 }
