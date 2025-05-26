@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SuccessInterceptor } from './common/interceptors/success.interceptor';
+import { RequestLoggerInterceptor } from './common/interceptors/request-logger.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -8,6 +9,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   app.useGlobalInterceptors(new SuccessInterceptor());
+  app.useGlobalInterceptors(new RequestLoggerInterceptor());
 
   await app.listen(4000);
 }
