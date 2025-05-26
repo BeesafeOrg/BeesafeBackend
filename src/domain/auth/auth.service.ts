@@ -72,16 +72,16 @@ export class AuthService {
     }
   }
 
-  async issueTokens(memberId: string) {
+  async issueTokens(member: Member) {
     const accessToken = await this.sign(
-      { sub: memberId },
+      { sub: member.id },
       this.configService.get<string>('JWT_ACCESS_SECRET'),
       this.configService.get<string>('JWT_ACCESS_EXPIRES'),
     );
 
     const refreshTokenId = uuid.v1();
     const refreshToken = await this.sign(
-      { sub: memberId, jti: refreshTokenId },
+      { sub: member.id, jti: refreshTokenId },
       this.configService.get('JWT_REFRESH_SECRET'),
       this.configService.get('JWT_REFRESH_EXPIRES'),
     );
@@ -89,9 +89,9 @@ export class AuthService {
     const key = this.getRefreshTokenRedisKey(refreshTokenId);
     const ttl = this.getRefreshTokenTtlSec();
 
-    await this.redisService.set(key, memberId, { ttl });
+    await this.redisService.set(key, member.id, { ttl });
     await this.redisService.pushToSet(
-      `${this.JWT_REFRESH_LIST_REDIS_KEY}:${memberId}`,
+      `${this.JWT_REFRESH_LIST_REDIS_KEY}:${member.id}`,
       key,
       ttl,
     );
@@ -113,16 +113,18 @@ export class AuthService {
   }
 
   async rotate(memberId: string, oldRefreshTokenRedisId: string) {
+    const member = await this.memberService.findByIdOrThrowException(memberId);
+
     const key = this.getRefreshTokenRedisKey(oldRefreshTokenRedisId);
     const ownerId = await this.redisService.get<string>(key);
 
-    if (ownerId !== memberId) {
+    if (ownerId !== member.id) {
       throw new BusinessException(ErrorType.INVALID_REFRESH_TOKEN);
     }
 
     await this.redisService.del(key);
     await this.revokeAll(memberId);
-    return this.issueTokens(memberId);
+    return this.issueTokens(member);
   }
 
   async revokeAll(memberId: string) {
