@@ -4,6 +4,8 @@ import { Member } from '../member/entities/member.entity';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { MemberService } from '../member/member.service';
+import { JwtService } from '@nestjs/jwt';
+import * as uuid from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -11,8 +13,9 @@ export class AuthService {
 
   constructor(
     private readonly http: HttpService,
-    private readonly cs: ConfigService,
+    private readonly configService: ConfigService,
     private readonly memberService: MemberService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async getProfile(accessToken: string): Promise<any> {
@@ -59,5 +62,26 @@ export class AuthService {
         profileImageUrl,
       });
     }
+  }
+
+  private async sign(payload, secret, exp) {
+    return this.jwtService.signAsync(payload, { secret, expiresIn: exp });
+  }
+
+  async issueTokens(member: Member) {
+    const accessToken = await this.sign(
+      { sub: member.id },
+      this.configService.get<string>('JWT_ACCESS_SECRET'),
+      this.configService.get<string>('JWT_ACCESS_EXPIRES'),
+    );
+
+    const jti = uuid.v1(); // 토큰 ID
+    const refreshToken = await this.sign(
+      { sub: member.id, jti },
+      this.configService.get('JWT_REFRESH_SECRET'),
+      this.configService.get('JWT_REFRESH_EXPIRES'),
+    );
+
+    return { accessToken, refreshToken };
   }
 }
