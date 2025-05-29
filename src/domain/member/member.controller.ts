@@ -1,8 +1,11 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Put, Req, UseGuards } from '@nestjs/common';
 import { MemberService } from './member.service';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { MemberResponseDto } from './dto/member-response.dto';
 import { MemberRoleGuard } from '../auth/guards/member-role-guard';
+import { MemberRole } from './constant/member-role.enum';
+import { MemberRoles } from '../auth/decorators/member-roles.decorator';
+import { UpdateInterestAreaDto } from './dto/update-interest-area.dto';
 
 @Controller('members')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
@@ -21,5 +24,11 @@ export class MemberController {
       profileImageUrl: member.profileImageUrl,
       role: member.role,
     };
+  }
+
+  @Put('me/interest-areas')
+  @MemberRoles(MemberRole.BEEKEEPER)
+  async setInterestAreas(@Req() req: any, @Body() dto: UpdateInterestAreaDto) {
+    await this.memberService.setInterestAreas(req.user.memberId, dto.areas);
   }
 }
