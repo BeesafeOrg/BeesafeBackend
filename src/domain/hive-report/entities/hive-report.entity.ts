@@ -41,7 +41,7 @@ export class HiveReport extends BaseEntity {
   districtCode: string;
 
   @ManyToOne(() => Region)
-  @JoinColumn({ name: 'districtCode', referencedColumnName: 'code' })
+  @JoinColumn({ name: 'districtCode', referencedColumnName: 'districtCode' })
   region!: Region;
 
   @Column({ length: 255 })

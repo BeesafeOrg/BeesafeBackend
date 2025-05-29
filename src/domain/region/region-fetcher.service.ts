@@ -106,16 +106,16 @@ export class RegionFetcherService {
 
   private async upsertRows(rows: VworldRow[]) {
     const entities = rows.map((r) => this.normalizeRow(r));
-    await this.regionRepo.upsert(entities, ['code']);
+    await this.regionRepo.upsert(entities, ['districtCode']);
   }
 
   private normalizeRow(r: VworldRow) {
-    const code = r.admCode.padStart(5, '0');
+    const districtCode = r.admCode.padStart(5, '0');
     const parts = r.admCodeNm.trim().split(/\s+/);
 
     const city = parts[0]; // 시/도
     const district = parts.slice(1).join(' ') || ''; // 시·군·구
 
-    return { code, city, district };
+    return { districtCode, city, district };
   }
 }

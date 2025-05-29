@@ -78,6 +78,16 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Member not found',
     status: HttpStatus.NOT_FOUND,
   },
+  [ErrorType.INVALID_INTEREST_AREA_COUNT]: {
+    code: 42002,
+    message: 'Invalid interest area count',
+    status: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorType.INVALID_REGION_CODE]: {
+    code: 42003,
+    message: 'Invalid or duplicated region districtCode',
+    status: HttpStatus.BAD_REQUEST,
+  },
 
   /* region */
   [ErrorType.REGION_OPEN_API_ERROR]: {

@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Get,
+  Param,
   Patch,
   Post,
   Query,
@@ -12,6 +14,8 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { JwtAccessGuard } from './guards/jwt-access.guard';
 import { JwtResponseDto } from './dto/jwt-response.dto';
 import { SetMemberRoleDto } from './dto/set-member-role.dto';
+import { MemberRole } from '../member/constant/member-role.enum';
+import { Member } from '../member/entities/member.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -45,5 +49,25 @@ export class AuthController {
     @Body() memberRoleDto: SetMemberRoleDto,
   ): Promise<void> {
     await this.authService.setMemberRole(req.user.memberId, memberRoleDto);
+  }
+
+  // 테스트용
+  @Get('/mylogin/beekeeper/:memberId') async myLogin1(
+    @Param('memberId') memberId: string,
+  ): Promise<JwtResponseDto> {
+    return await this.authService.issueTokens({
+      id: memberId,
+      role: MemberRole.BEEKEEPER,
+    } as Member);
+  }
+
+  // 테스트용
+  @Get('/mylogin/reporter/:memberId') async myLogin2(
+    @Param('memberId') memberId: string,
+  ): Promise<JwtResponseDto> {
+    return await this.authService.issueTokens({
+      id: memberId,
+      role: MemberRole.REPORTER,
+    } as Member);
   }
 }

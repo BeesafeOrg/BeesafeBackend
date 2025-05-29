@@ -29,11 +29,11 @@ export class RegionService {
     });
 
     const map = new Map<string, DistrictDto[]>();
-    for (const { code, city, district } of rows) {
+    for (const { districtCode, city, district } of rows) {
       if (!map.has(city)) {
         map.set(city, []);
       }
-      map.get(city)?.push({ code, district });
+      map.get(city)?.push({ districtCode, district });
     }
 
     const grouped = [...map.entries()].map(([city, districts]) => ({
