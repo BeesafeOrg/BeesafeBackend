@@ -13,6 +13,6 @@ export class InterestArea extends BaseEntity {
   districtCode: string;
 
   @ManyToOne(() => Region, { eager: true })
-  @JoinColumn({ name: 'districtCode', referencedColumnName: 'code' })
+  @JoinColumn({ name: 'districtCode', referencedColumnName: 'districtCode' })
   region: Region;
 }

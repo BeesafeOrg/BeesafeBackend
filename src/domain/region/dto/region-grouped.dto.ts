@@ -1,5 +1,5 @@
 export class DistrictDto {
-  code: string;
+  districtCode: string;
   district: string;
 }
 

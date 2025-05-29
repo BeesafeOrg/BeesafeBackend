@@ -3,7 +3,7 @@ import { Column, Entity, PrimaryColumn } from 'typeorm';
 @Entity('region')
 export class Region {
   @PrimaryColumn({ length: 5 })
-  code: string;
+  districtCode: string;
 
   @Column({ length: 20 })
   city: string;
