@@ -56,13 +56,13 @@ export class RegionFetcherService {
       baseURL: 'https://api.vworld.kr',
       timeout: 7000,
       httpsAgent: new HttpsAgent({
-        keepAlive: true,
+        keepAlive: false,
         maxSockets: 100,
         family: 4,
       }),
       headers: {
-        Referer: configService.getOrThrow('VWORLD_DOMAIN'),
-        Origin: configService.getOrThrow('VWORLD_DOMAIN'),
+        Referer: `https://${configService.getOrThrow('VWORLD_DOMAIN')}`,
+        Origin: `https://${configService.getOrThrow('VWORLD_DOMAIN')}`,
       },
     });
 
