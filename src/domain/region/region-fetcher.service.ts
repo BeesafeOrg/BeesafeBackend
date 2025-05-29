@@ -8,6 +8,9 @@ import { Region } from './entities/region.entity';
 import { BusinessException } from '../../common/filters/exception/business-exception';
 import { ErrorType } from '../../common/filters/exception/error-code.enum';
 import { Cron, Timeout } from '@nestjs/schedule';
+import axios, { AxiosInstance } from 'axios';
+import * as rax from 'retry-axios';
+import { Agent as HttpsAgent } from 'https';
 
 interface VworldRow {
   admCode: string;
@@ -20,6 +23,7 @@ export class RegionFetcherService {
   private readonly LOGGER = new Logger(RegionFetcherService.name);
   private readonly BASE_URL = 'https://api.vworld.kr/ned/data/admSiList';
   private readonly LOG = new Logger(RegionFetcherService.name);
+  private readonly api: AxiosInstance;
 
   // 17 개 시·도 코드 테이블
   private readonly sidoCodes = [
@@ -47,16 +51,38 @@ export class RegionFetcherService {
     private readonly configService: ConfigService,
     @InjectRepository(Region)
     private readonly regionRepo: Repository<Region>,
-  ) {}
+  ) {
+    this.api = axios.create({
+      baseURL: 'https://api.vworld.kr',
+      timeout: 7000,
+      httpsAgent: new HttpsAgent({
+        keepAlive: false,
+        family: 4,
+      }),
+      headers: {
+        Referer: configService.getOrThrow('VWORLD_DOMAIN'),
+        Origin: configService.getOrThrow('VWORLD_DOMAIN'),
+      },
+    });
 
-  /** ① 서버 부팅 30초 후 최초 1회 */
-  @Timeout(10_000)
+    rax.attach(this.api);
+    this.api.defaults.raxConfig = {
+      retry: 3,
+      retryDelay: 1_000,
+      statusCodesToRetry: [
+        [429, 429],
+        [500, 599],
+      ],
+    };
+  }
+
+  @Timeout(30_000)
   async seedAtBoot() {
     this.LOG.log('Initial region sync…');
     await this.syncAll();
   }
 
-  /** ② 매주 월요일 03:30 KST */
+  /** 매주 월요일 03:30 KST */
   @Cron('30 3 * * 1', { timeZone: 'Asia/Seoul' })
   async weeklySync() {
     this.LOG.log('Weekly region sync…');
@@ -95,10 +121,10 @@ export class RegionFetcherService {
     );
     data = data.admVOList;
 
-    if (data?.error.length > 0) {
+    if (data?.error?.length) {
       throw new BusinessException(
         ErrorType.REGION_OPEN_API_ERROR,
-        `${data?.error} >> ${data?.message}`,
+        `${data.error} >> ${data.message}`,
       );
     }
     return (data?.admVOList as VworldRow[]) ?? [];
