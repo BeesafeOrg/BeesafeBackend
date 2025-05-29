@@ -25,7 +25,7 @@ export class MemberService {
       where: { id },
     });
     if (!member) {
-      throw new BusinessException(ErrorType.Member_NOT_FOUND);
+      throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
     }
     return member;
   }
@@ -46,7 +46,7 @@ export class MemberService {
       role,
     });
     if (!affected) {
-      throw new BusinessException(ErrorType.Member_NOT_FOUND);
+      throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
     }
   }
 }

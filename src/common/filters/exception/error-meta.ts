@@ -73,9 +73,21 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
   },
 
   /* member */
-  [ErrorType.Member_NOT_FOUND]: {
+  [ErrorType.MEMBER_NOT_FOUND]: {
     code: 42001,
     message: 'Member not found',
     status: HttpStatus.NOT_FOUND,
+  },
+
+  /* region */
+  [ErrorType.REGION_OPEN_API_ERROR]: {
+    code: 53002,
+    message: 'Region Open Api Server Error',
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+  },
+  [ErrorType.INVALID_REGION_DISTRICT_CODE]: {
+    code: 53002,
+    message: 'Invalid region district code',
+    status: HttpStatus.BAD_REQUEST,
   },
 };
