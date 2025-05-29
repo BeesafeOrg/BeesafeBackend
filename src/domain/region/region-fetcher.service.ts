@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { Region } from './entities/region.entity';
 import { BusinessException } from '../../common/filters/exception/business-exception';
 import { ErrorType } from '../../common/filters/exception/error-code.enum';
+import { Cron, Timeout } from '@nestjs/schedule';
 
 interface VworldRow {
   admCode: string;
@@ -18,6 +19,7 @@ interface VworldRow {
 export class RegionFetcherService {
   private readonly LOGGER = new Logger(RegionFetcherService.name);
   private readonly BASE_URL = 'https://api.vworld.kr/ned/data/admSiList';
+  private readonly LOG = new Logger(RegionFetcherService.name);
 
   // 17 개 시·도 코드 테이블
   private readonly sidoCodes = [
@@ -47,16 +49,31 @@ export class RegionFetcherService {
     private readonly regionRepo: Repository<Region>,
   ) {}
 
-  async syncAll() {
+  /** ① 서버 부팅 30초 후 최초 1회 */
+  @Timeout(10_000)
+  async seedAtBoot() {
+    this.LOG.log('Initial region sync…');
+    await this.syncAll();
+  }
+
+  /** ② 매주 월요일 03:30 KST */
+  @Cron('30 3 * * 1', { timeZone: 'Asia/Seoul' })
+  async weeklySync() {
+    this.LOG.log('Weekly region sync…');
+    await this.syncAll();
+  }
+
+  private async syncAll() {
     const key = this.configService.getOrThrow<string>('VWORLD_KEY');
     const domain = this.configService.getOrThrow<string>('VWORLD_DOMAIN');
 
+    let length = 0;
     for (const sido of this.sidoCodes) {
       const rows = await this.fetchSiList(key, domain, sido);
       await this.upsertRows(rows);
-      this.LOGGER.log(`[${sido}] ${rows.length} 개 시·군·구 동기화`);
+      length += rows.length;
     }
-    this.LOGGER.log('Region table synced with VWorld');
+    this.LOGGER.log(`Region table synced with VWorld [total: ${length}]`);
   }
 
   private async fetchSiList(
