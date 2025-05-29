@@ -91,7 +91,7 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
 
   /* region */
   [ErrorType.REGION_OPEN_API_ERROR]: {
-    code: 53002,
+    code: 53001,
     message: 'Region Open Api Server Error',
     status: HttpStatus.INTERNAL_SERVER_ERROR,
   },

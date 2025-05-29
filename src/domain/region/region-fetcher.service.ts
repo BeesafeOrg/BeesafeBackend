@@ -56,7 +56,8 @@ export class RegionFetcherService {
       baseURL: 'https://api.vworld.kr',
       timeout: 7000,
       httpsAgent: new HttpsAgent({
-        keepAlive: false,
+        keepAlive: true,
+        maxSockets: 100,
         family: 4,
       }),
       headers: {
@@ -76,7 +77,7 @@ export class RegionFetcherService {
     };
   }
 
-  @Timeout(30_000)
+  @Timeout(10_000)
   async seedAtBoot() {
     this.LOG.log('Initial region sync…');
     await this.syncAll();
@@ -116,17 +117,24 @@ export class RegionFetcherService {
       pageNo: 1,
     };
 
-    let { data } = await firstValueFrom(
-      this.httpService.get(this.BASE_URL, { params }),
-    );
-    data = data.admVOList;
-
-    if (data?.error?.length) {
-      throw new BusinessException(
-        ErrorType.REGION_OPEN_API_ERROR,
-        `${data.error} >> ${data.message}`,
+    let data;
+    try {
+      let { data } = await firstValueFrom(
+        this.httpService.get(this.BASE_URL, { params }),
       );
+      data = data.admVOList;
+
+      if (data?.error?.length) {
+        console.error(`${data.error} >> ${data.message}`);
+        throw new BusinessException(
+          ErrorType.REGION_OPEN_API_ERROR,
+          `${data.error} >> ${data.message}`,
+        );
+      }
+    } catch (e) {
+      console.error(e);
     }
+
     return (data?.admVOList as VworldRow[]) ?? [];
   }
 
