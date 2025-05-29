@@ -8,7 +8,12 @@ import { ErrorType } from '../../common/filters/exception/error-code.enum';
 import { MemberRole } from './constant/member-role.enum';
 import { Region } from '../region/entities/region.entity';
 import { InterestArea } from './entities/interest-area.entity';
-import { InterestAreaDto } from './dto/update-interest-area.dto';
+import { DistrictCodeDto } from './dto/update-interest-area.dto';
+import {
+  DistrictDto,
+  RegionGroupedDto,
+} from '../region/dto/region-grouped.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class MemberService {
@@ -58,7 +63,7 @@ export class MemberService {
 
   async setInterestAreas(
     memberId: string,
-    areaDtos: InterestAreaDto[],
+    areaDtos: DistrictCodeDto[],
   ): Promise<void> {
     if (areaDtos.length === 0 || areaDtos.length > this.MAX_AREA) {
       throw new BusinessException(ErrorType.INVALID_INTEREST_AREA_COUNT);
@@ -99,5 +104,39 @@ export class MemberService {
         await manager.save(newEntities);
       }
     });
+  }
+
+  async getInterestAreas(memberId: string): Promise<RegionGroupedDto[]> {
+    const member = await this.memberRepo.findOne({
+      where: { id: memberId },
+      relations: ['interestAreas', 'interestAreas.region'],
+    });
+    if (!member) {
+      throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
+    }
+
+    const cityMap = new Map<string, DistrictDto[]>();
+
+    member.interestAreas.forEach((area) => {
+      const city = area.region.city;
+
+      const districtDto = plainToInstance(DistrictDto, {
+        districtCode: area.districtCode,
+        district: area.region.district,
+      });
+
+      if (!cityMap.has(city)) {
+        cityMap.set(city, [districtDto]);
+      } else {
+        cityMap.get(city)!.push(districtDto);
+      }
+    });
+
+    return Array.from(cityMap.entries()).map(([city, districts]) => ({
+      city,
+      districts: Array.from(
+        new Map(districts.map((d) => [d.districtCode, d])).values(),
+      ),
+    }));
   }
 }

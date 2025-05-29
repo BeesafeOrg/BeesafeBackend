@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class InterestAreaDto {
+export class DistrictCodeDto {
   @IsNotEmpty()
   @IsString()
   districtCode: string;
@@ -19,6 +19,6 @@ export class UpdateInterestAreaDto {
   @ArrayMinSize(1)
   @ArrayMaxSize(3)
   @ValidateNested({ each: true })
-  @Type(() => InterestAreaDto)
-  areas: InterestAreaDto[];
+  @Type(() => DistrictCodeDto)
+  areas: DistrictCodeDto[];
 }
