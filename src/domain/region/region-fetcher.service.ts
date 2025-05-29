@@ -54,7 +54,7 @@ export class RegionFetcherService {
   ) {
     this.api = axios.create({
       baseURL: 'https://api.vworld.kr',
-      timeout: 7000,
+      timeout: 10000,
       httpsAgent: new HttpsAgent({
         keepAlive: false,
         maxSockets: 100,
@@ -117,22 +117,17 @@ export class RegionFetcherService {
       pageNo: 1,
     };
 
-    let data;
-    try {
-      let { data } = await firstValueFrom(
-        this.httpService.get(this.BASE_URL, { params }),
-      );
-      data = data.admVOList;
+    let { data } = await firstValueFrom(
+      this.httpService.get(this.BASE_URL, { params }),
+    );
+    data = data.admVOList;
 
-      if (data?.error?.length) {
-        console.error(`${data.error} >> ${data.message}`);
-        throw new BusinessException(
-          ErrorType.REGION_OPEN_API_ERROR,
-          `${data.error} >> ${data.message}`,
-        );
-      }
-    } catch (e) {
-      console.error(e);
+    if (data?.error?.length) {
+      console.error(`${data.error} >> ${data.message}`);
+      throw new BusinessException(
+        ErrorType.REGION_OPEN_API_ERROR,
+        `${data.error} >> ${data.message}`,
+      );
     }
 
     return (data?.admVOList as VworldRow[]) ?? [];
