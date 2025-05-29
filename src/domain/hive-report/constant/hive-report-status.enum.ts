@@ -1,6 +1,5 @@
 export enum HiveReportStatus {
   REPORTED = 'REPORTED',
   RESERVED = 'RESERVED',
-  CANCELLED = 'CANCELLED',
   REMOVED = 'REMOVED',
 }

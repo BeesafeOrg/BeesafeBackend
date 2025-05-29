@@ -6,7 +6,9 @@ import { MemberModule } from './domain/member/member.module';
 import { HiveReportModule } from './domain/hive-report/hive-report.module';
 import { AuthModule } from './domain/auth/auth.module';
 import { RedisModule } from './common/redis/redis.module';
+import { RegionModule } from './domain/region/region.module';
 import * as Joi from '@hapi/joi';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -27,6 +29,9 @@ import * as Joi from '@hapi/joi';
 
         REDIS_URL: Joi.string().required(),
         REDIS_TTL: Joi.number().required(),
+
+        VWORLD_KEY: Joi.string().required(),
+        VWORLD_DOMAIN: Joi.string().required(),
       }),
     }),
     DatabaseModule,
@@ -34,6 +39,8 @@ import * as Joi from '@hapi/joi';
     HiveReportModule,
     AuthModule,
     RedisModule,
+    RegionModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [],

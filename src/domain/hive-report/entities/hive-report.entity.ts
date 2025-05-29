@@ -2,6 +2,7 @@ import {
   Column,
   Entity,
   Index,
+  JoinColumn,
   ManyToOne,
   OneToMany,
 } from 'typeorm';
@@ -11,6 +12,7 @@ import { pointTransformer } from '../constant/point-transformer';
 import { Species } from '../constant/species.enum';
 import { HiveReportStatus } from '../constant/hive-report-status.enum';
 import { BaseEntity } from '../../../common/database/base.entity';
+import { Region } from '../../region/entities/region.entity';
 
 @Entity('hive_report')
 export class HiveReport extends BaseEntity {
@@ -37,6 +39,10 @@ export class HiveReport extends BaseEntity {
 
   @Column({ length: 5 })
   districtCode: string;
+
+  @ManyToOne(() => Region)
+  @JoinColumn({ name: 'districtCode', referencedColumnName: 'code' })
+  region!: Region;
 
   @Column({ length: 255 })
   imageUrl: string;
