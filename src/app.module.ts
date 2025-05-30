@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnApplicationBootstrap } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { DatabaseModule } from './common/database/database.module';
 import { ConfigModule } from '@nestjs/config';
@@ -9,6 +9,7 @@ import { RedisModule } from './common/redis/redis.module';
 import { RegionModule } from './domain/region/region.module';
 import * as Joi from '@hapi/joi';
 import { ScheduleModule } from '@nestjs/schedule';
+import { RegionSeedService } from './domain/region/constant/region-seed.service';
 
 @Module({
   imports: [
@@ -45,4 +46,10 @@ import { ScheduleModule } from '@nestjs/schedule';
   controllers: [AppController],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements OnApplicationBootstrap {
+  constructor(private readonly regionSeedService: RegionSeedService) {}
+
+  async onApplicationBootstrap() {
+    await this.regionSeedService.sync();
+  }
+}
