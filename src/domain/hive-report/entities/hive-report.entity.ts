@@ -34,15 +34,15 @@ export class HiveReport extends BaseEntity {
   @Column({ type: 'enum', enum: HiveReportStatus })
   status: HiveReportStatus;
 
-  @Column({ length: 50, nullable: true })
-  poleNumber?: string;
+  @Column()
+  roadAddress: string;
 
   @Column({ length: 5 })
   districtCode: string;
 
   @ManyToOne(() => Region)
   @JoinColumn({ name: 'districtCode', referencedColumnName: 'districtCode' })
-  region!: Region;
+  region: Region;
 
   @Column({ length: 255 })
   imageUrl: string;

@@ -5,6 +5,7 @@ import { RegionService } from './region.service';
 import { RegionGroupedDto } from './dto/region-grouped.dto';
 import { MemberRoles } from '../auth/decorators/member-roles.decorator';
 import { MemberRole } from '../member/constant/member-role.enum';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('regions')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
@@ -13,6 +14,9 @@ export class RegionController {
 
   @Get()
   @MemberRoles(MemberRole.BEEKEEPER)
+  @ApiBearerAuth('jwt-access')
+  @ApiOperation({ summary: '전체 지역 조회' })
+  @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
   async findAll(): Promise<RegionGroupedDto[]> {
     return await this.regionService.findAll();
   }
