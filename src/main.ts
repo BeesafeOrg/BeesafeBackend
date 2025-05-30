@@ -22,7 +22,6 @@ async function bootstrap() {
     .setTitle('Beesafe API')
     .setDescription('Beesafe API Docs')
     .setVersion('1.0')
-    .addTag('android-mobile-programming-team-1')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'jwt-access',
