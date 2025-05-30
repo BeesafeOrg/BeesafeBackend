@@ -11,11 +11,11 @@ import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('members')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
+@ApiBearerAuth('jwt-access')
 export class MemberController {
   constructor(private readonly memberService: MemberService) {}
 
   @Get('me')
-  @ApiBearerAuth('jwt-access')
   @ApiOperation({ summary: '회원 정보 조회' })
   @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
   async getMyInfo(@Req() req: any): Promise<MemberResponseDto> {
@@ -33,7 +33,6 @@ export class MemberController {
 
   @Put('me/interest-areas')
   @MemberRoles(MemberRole.BEEKEEPER)
-  @ApiBearerAuth('jwt-access')
   @ApiOperation({ summary: '양봉업자 관심지역 설정' })
   @ApiResponse({ status: 2000, description: '성공적으로 설정되었습니다.' })
   async setInterestAreas(
@@ -45,7 +44,6 @@ export class MemberController {
 
   @Get('me/interest-areas')
   @MemberRoles(MemberRole.BEEKEEPER)
-  @ApiBearerAuth('jwt-access')
   @ApiOperation({ summary: '양봉업자 관심지역 조회' })
   @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
   async getInterestAreas(@Req() req: any): Promise<RegionGroupedDto[]> {
