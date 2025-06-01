@@ -100,4 +100,11 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Invalid region district code',
     status: HttpStatus.BAD_REQUEST,
   },
+
+  /* hive-report */
+  [ErrorType.INVALID_FILE_FORMAT]: {
+    code: 54001,
+    message: 'The file was not transferred',
+    status: HttpStatus.BAD_REQUEST,
+  },
 };

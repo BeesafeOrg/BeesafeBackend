@@ -10,6 +10,7 @@ import { RegionModule } from './domain/region/region.module';
 import * as Joi from '@hapi/joi';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RegionSeedService } from './domain/region/constant/region-seed.service';
+import { S3Module } from './common/s3/s3.module';
 
 @Module({
   imports: [
@@ -31,8 +32,10 @@ import { RegionSeedService } from './domain/region/constant/region-seed.service'
         REDIS_URL: Joi.string().required(),
         REDIS_TTL: Joi.number().required(),
 
-        VWORLD_KEY: Joi.string().required(),
-        VWORLD_DOMAIN: Joi.string().required(),
+        AWS_S3_BUCKET_NAME: Joi.string().required(),
+        AWS_S3_ACCESS: Joi.string().required(),
+        AWS_S3_SECRET: Joi.string().required(),
+        AWS_S3_REGION: Joi.string().required(),
       }),
     }),
     DatabaseModule,
@@ -42,6 +45,7 @@ import { RegionSeedService } from './domain/region/constant/region-seed.service'
     RedisModule,
     RegionModule,
     ScheduleModule.forRoot(),
+    S3Module,
   ],
   controllers: [AppController],
   providers: [],
