@@ -100,4 +100,33 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Invalid region district code',
     status: HttpStatus.BAD_REQUEST,
   },
+
+  /* hive-report */
+  [ErrorType.INVALID_FILE_FORMAT]: {
+    code: 54001,
+    message: 'The file was not transferred',
+    status: HttpStatus.BAD_REQUEST,
+  },
+  // 네트워크·rate-limit 등 OpenAI SDK 오류
+  [ErrorType.VISION_SERVICE_UNAVAILABLE]: {
+    code: 57001,
+    message: 'Openai vision service unavailable',
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+  },
+  // content_filter(blocked) 이거나 응답 형식 불일치
+  [ErrorType.INVALID_VISION_RESPONSE]: {
+    code: 57002,
+    message: 'Invalid openai vision response',
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+  },
+  [ErrorType.VISION_JSON_PARSE_ERROR]: {
+    code: 57003,
+    message: 'Openai vision json parse error',
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+  },
+  [ErrorType.VISION_SCHEMA_MISMATCH]: {
+    code: 57004,
+    message: 'Openai vision schema mismatch',
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+  },
 };

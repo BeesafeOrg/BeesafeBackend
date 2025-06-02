@@ -1,14 +1,6 @@
-import {
-  Column,
-  Entity,
-  Index,
-  JoinColumn,
-  ManyToOne,
-  OneToMany,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 import { Member } from '../../member/entities/member.entity';
 import { Reward } from './reward.entity';
-import { pointTransformer } from '../constant/point-transformer';
 import { Species } from '../constant/species.enum';
 import { HiveReportStatus } from '../constant/hive-report-status.enum';
 import { BaseEntity } from '../../../common/database/base.entity';
@@ -21,23 +13,33 @@ export class HiveReport extends BaseEntity {
 
   @Column({
     type: 'point',
-    spatialFeatureType: 'Point',
-    srid: 4326,
-    transformer: pointTransformer,
+    nullable: true,
   })
-  @Index({ spatial: true })
   location: { lat: number; lng: number };
 
-  @Column({ type: 'enum', enum: Species })
-  species: Species;
+  @Column({ type: 'enum', enum: Species, default: Species.NONE })
+  species?: Species;
 
-  @Column({ type: 'enum', enum: HiveReportStatus })
-  status: HiveReportStatus;
+  @Column({ type: 'enum', enum: Species })
+  aiResponseOfSpecies: Species;
 
   @Column()
+  aiConfidenceOfSpecies: number;
+
+  @Column()
+  aiReasonOfSpecies: string;
+
+  @Column({
+    type: 'enum',
+    enum: HiveReportStatus,
+    default: HiveReportStatus.REPORTED,
+  })
+  status: HiveReportStatus;
+
+  @Column({ nullable: true })
   roadAddress: string;
 
-  @Column({ length: 5 })
+  @Column({ length: 5, nullable: true })
   districtCode: string;
 
   @ManyToOne(() => Region)
