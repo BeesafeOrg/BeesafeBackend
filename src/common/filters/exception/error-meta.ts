@@ -34,6 +34,11 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Database Error',
     status: HttpStatus.BAD_REQUEST,
   },
+  [ErrorType.INVALID_FILE_FORMAT]: {
+    code: 40006,
+    message: 'The file was not transferred',
+    status: HttpStatus.BAD_REQUEST,
+  },
   [ErrorType.INTERNAL_SERVER_ERROR]: {
     code: 50000,
     message: 'Internal server error',
@@ -90,11 +95,6 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
   },
 
   /* region */
-  [ErrorType.REGION_OPEN_API_ERROR]: {
-    code: 53001,
-    message: 'Region Open Api Server Error',
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-  },
   [ErrorType.INVALID_REGION_DISTRICT_CODE]: {
     code: 53002,
     message: 'Invalid region district code',
@@ -102,30 +102,37 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
   },
 
   /* hive-report */
-  [ErrorType.INVALID_FILE_FORMAT]: {
-    code: 54001,
-    message: 'The file was not transferred',
-    status: HttpStatus.BAD_REQUEST,
+  [ErrorType.HIVE_REPORT_NOT_FOUND]: {
+    code: 44001,
+    message: 'Hive report not found',
+    status: HttpStatus.NOT_FOUND,
   },
+  [ErrorType.ALREADY_UPLOADED_HIVE_REPORT]: {
+    code: 44002,
+    message: 'Already uploaded hive report',
+    status: HttpStatus.CONFLICT,
+  },
+
+  /* openai */
   // 네트워크·rate-limit 등 OpenAI SDK 오류
   [ErrorType.VISION_SERVICE_UNAVAILABLE]: {
-    code: 57001,
+    code: 55001,
     message: 'Openai vision service unavailable',
     status: HttpStatus.INTERNAL_SERVER_ERROR,
   },
   // content_filter(blocked) 이거나 응답 형식 불일치
   [ErrorType.INVALID_VISION_RESPONSE]: {
-    code: 57002,
+    code: 55002,
     message: 'Invalid openai vision response',
     status: HttpStatus.INTERNAL_SERVER_ERROR,
   },
   [ErrorType.VISION_JSON_PARSE_ERROR]: {
-    code: 57003,
+    code: 55003,
     message: 'Openai vision json parse error',
     status: HttpStatus.INTERNAL_SERVER_ERROR,
   },
   [ErrorType.VISION_SCHEMA_MISMATCH]: {
-    code: 57004,
+    code: 55004,
     message: 'Openai vision schema mismatch',
     status: HttpStatus.INTERNAL_SERVER_ERROR,
   },

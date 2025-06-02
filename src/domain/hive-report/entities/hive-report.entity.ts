@@ -11,14 +11,14 @@ export class HiveReport extends BaseEntity {
   @ManyToOne(() => Member, (m) => m.reports, { onDelete: 'SET NULL' })
   reporter: Member;
 
-  @Column({
-    type: 'point',
-    nullable: true,
-  })
-  location: { lat: number; lng: number };
+  @Column({ nullable: true })
+  latitude: number;
+
+  @Column({ nullable: true })
+  longitude: number;
 
   @Column({ type: 'enum', enum: Species, default: Species.NONE })
-  species?: Species;
+  species: Species;
 
   @Column({ type: 'enum', enum: Species })
   aiResponseOfSpecies: Species;
@@ -32,7 +32,7 @@ export class HiveReport extends BaseEntity {
   @Column({
     type: 'enum',
     enum: HiveReportStatus,
-    default: HiveReportStatus.REPORTED,
+    nullable: true,
   })
   status: HiveReportStatus;
 

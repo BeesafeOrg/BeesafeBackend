@@ -6,9 +6,11 @@ import { OpenAiResponseOfHiveReportImageDto } from './dto/open-ai-response-of-hi
 import { MemberService } from '../member/member.service';
 import { BusinessException } from '../../common/filters/exception/business-exception';
 import { ErrorType } from '../../common/filters/exception/error-code.enum';
-import { Species } from './constant/species.enum';
 import { OpenaiService } from '../../common/openai/openai.service';
 import { OpenaiPromptType } from '../../common/openai/constant/openai-prompt.type.enum';
+import { CreateHiveReportDto } from './dto/create-hive-report.dto';
+import { RegionService } from '../region/region.service';
+import { HiveReportStatus } from './constant/hive-report-status.enum';
 
 @Injectable()
 export class HiveReportService {
@@ -17,6 +19,7 @@ export class HiveReportService {
     private readonly hiveReportRepo: Repository<HiveReport>,
     private readonly memberService: MemberService,
     private readonly openaiService: OpenaiService,
+    private readonly regionService: RegionService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -51,5 +54,31 @@ export class HiveReportService {
       aiConfidenceOfSpecies: record.aiConfidenceOfSpecies,
       aiReasonOfSpecies: record.aiReasonOfSpecies,
     };
+  }
+
+  async finalizeReport(dto: CreateHiveReportDto): Promise<void> {
+    const report = await this.hiveReportRepo.findOne({
+      where: { id: dto.hiveReportId },
+    });
+    if (!report) {
+      throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
+    }
+    if (report.status) {
+      throw new BusinessException(ErrorType.ALREADY_UPLOADED_HIVE_REPORT);
+    }
+
+    const region = await this.regionService.findByDistrictCode(
+      dto.districtCode,
+    );
+    Object.assign(report, {
+      region,
+      species: dto.species,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+      roadAddress: dto.roadAddress,
+      districtCode: dto.districtCode,
+      status: HiveReportStatus.REPORTED,
+    });
+    await this.hiveReportRepo.save(report);
   }
 }

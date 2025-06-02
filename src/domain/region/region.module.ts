@@ -15,6 +15,6 @@ import { RegionSeedService } from './constant/region-seed.service';
   ],
   controllers: [RegionController],
   providers: [RegionSeedService, RegionService],
-  exports: [RegionSeedService],
+  exports: [RegionSeedService, RegionService],
 })
 export class RegionModule {}
