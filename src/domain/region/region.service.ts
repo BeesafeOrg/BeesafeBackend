@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Region } from './entities/region.entity';
 import { Repository } from 'typeorm';
 import { RedisService } from '../../common/redis/redis.service';
+import { BusinessException } from '../../common/filters/exception/business-exception';
+import { ErrorType } from '../../common/filters/exception/error-code.enum';
 
 @Injectable()
 export class RegionService {
@@ -43,5 +45,15 @@ export class RegionService {
 
     await this.redisService.set(this.CACHE_KEY, grouped, { ttl: this.TTL_SEC });
     return grouped;
+  }
+
+  async findByDistrictCode(districtCode: string): Promise<Region> {
+    const region = await this.regionRepo.findOne({
+      where: { districtCode },
+    });
+    if (!region) {
+      throw new BusinessException(ErrorType.INVALID_REGION_DISTRICT_CODE);
+    }
+    return region;
   }
 }
