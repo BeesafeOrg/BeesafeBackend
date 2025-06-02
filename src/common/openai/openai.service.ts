@@ -5,6 +5,13 @@ import { OpenaiPromptType } from './constant/openai-prompt.type.enum';
 import { OPENAI_PROMPT } from './constant/hive-image-verify-prompt';
 import { BusinessException } from '../filters/exception/business-exception';
 import { ErrorType } from '../filters/exception/error-code.enum';
+import { Species } from '../../domain/hive-report/constant/species.enum';
+
+export interface OpenAiHiveReportImageDto {
+  species: Species;
+  confidence: number;
+  reason: string;
+}
 
 @Injectable()
 export class OpenaiService {
@@ -51,17 +58,26 @@ export class OpenaiService {
       throw new BusinessException(ErrorType.INVALID_VISION_RESPONSE);
     }
 
-    const hasValidShape = (
-      v: unknown,
-    ): v is { isValid: boolean; reason: string } =>
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      throw new BusinessException(ErrorType.VISION_SCHEMA_MISMATCH);
+    }
+
+    const hasValidShape = (v: unknown): v is OpenAiHiveReportImageDto =>
       typeof v === 'object' &&
       v !== null &&
-      'isValid' in v &&
-      typeof (v as any).isValid === 'boolean' &&
+      'species' in v &&
+      typeof (v as any).species === 'string' &&
+      Object.values(Species).includes((v as any).species as Species) &&
+      'confidence' in v &&
+      typeof (v as any).confidence === 'number' &&
+      (v as any).confidence >= 0 &&
+      (v as any).confidence <= 1 &&
       'reason' in v &&
       typeof (v as any).reason === 'string';
 
-    const parsed = JSON.parse(content);
     if (!hasValidShape(parsed)) {
       throw new BusinessException(ErrorType.VISION_SCHEMA_MISMATCH);
     }

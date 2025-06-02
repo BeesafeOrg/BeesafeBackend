@@ -6,12 +6,14 @@ import { HiveReport } from './entities/hive-report.entity';
 import { Reward } from './entities/reward.entity';
 import { MemberModule } from '../member/member.module';
 import { S3Module } from '../../common/s3/s3.module';
+import { OpenaiModule } from '../../common/openai/openai.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([HiveReport, Reward]),
     MemberModule,
     S3Module,
+    OpenaiModule,
   ],
   controllers: [HiveReportController],
   providers: [HiveReportService],

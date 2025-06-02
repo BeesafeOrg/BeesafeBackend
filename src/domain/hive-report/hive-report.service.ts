@@ -7,6 +7,8 @@ import { MemberService } from '../member/member.service';
 import { BusinessException } from '../../common/filters/exception/business-exception';
 import { ErrorType } from '../../common/filters/exception/error-code.enum';
 import { Species } from './constant/species.enum';
+import { OpenaiService } from '../../common/openai/openai.service';
+import { OpenaiPromptType } from '../../common/openai/constant/openai-prompt.type.enum';
 
 @Injectable()
 export class HiveReportService {
@@ -14,6 +16,7 @@ export class HiveReportService {
     @InjectRepository(HiveReport)
     private readonly hiveReportRepo: Repository<HiveReport>,
     private readonly memberService: MemberService,
+    private readonly openaiService: OpenaiService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -26,17 +29,18 @@ export class HiveReportService {
       throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
     }
 
-    // const { isValid, reason } = await this.openaiService.verifyImageByType(
-    //   imageUrl,
-    //   ecoVerification.type,
-    // );
+    const { species, confidence, reason } =
+      await this.openaiService.verifyImageByType(
+        imageUrl,
+        OpenaiPromptType.HIVE_REPORT_IMAGE_VISION,
+      );
 
     let record = this.hiveReportRepo.create({
       reporter: member,
       imageUrl,
-      aiResponseOfSpecies: Species.HONEYBEE, // TODO
-      aiConfidenceOfSpecies: 0.92,
-      aiReasonOfSpecies: '', // TODO
+      aiResponseOfSpecies: species,
+      aiConfidenceOfSpecies: confidence,
+      aiReasonOfSpecies: reason,
     });
     record = await this.hiveReportRepo.save(record);
 
