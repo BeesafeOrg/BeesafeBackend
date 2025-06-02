@@ -32,7 +32,7 @@ import { ErrorType } from '../filters/exception/error-code.enum';
             const ext = extname(file.originalname); // 확장자
             const baseName = basename(file.originalname, ext); // 확장자 제외
             // 파일이름-날짜.확장자
-            const fileName = `/beesafe/images/${baseName}-${Date.now()}${ext}`;
+            const fileName = `beesafe/${baseName}-${Date.now()}${ext}`;
             callback(null, fileName);
           },
         }),
