@@ -43,6 +43,7 @@
     "multer-s3": "^3.0.1",
     "mysql2": "^3.14.1",
     "npm": "^11.4.1",
+    "openai": "^4.100.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "retry-axios": "^3.1.3",

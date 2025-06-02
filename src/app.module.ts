@@ -11,6 +11,7 @@ import * as Joi from '@hapi/joi';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RegionSeedService } from './domain/region/constant/region-seed.service';
 import { S3Module } from './common/s3/s3.module';
+import { OpenaiModule } from './common/openai/openai.module';
 
 @Module({
   imports: [
@@ -36,6 +37,9 @@ import { S3Module } from './common/s3/s3.module';
         AWS_S3_ACCESS: Joi.string().required(),
         AWS_S3_SECRET: Joi.string().required(),
         AWS_S3_REGION: Joi.string().required(),
+
+        OPENAI_API_KEY: Joi.string().required(),
+        OPENAI_MODEL: Joi.string().required(),
       }),
     }),
     DatabaseModule,
@@ -46,6 +50,7 @@ import { S3Module } from './common/s3/s3.module';
     RegionModule,
     ScheduleModule.forRoot(),
     S3Module,
+    OpenaiModule,
   ],
   controllers: [AppController],
   providers: [],
