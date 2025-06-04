@@ -117,6 +117,11 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Member(Reporter) mismatch',
     status: HttpStatus.UNAUTHORIZED,
   },
+  [ErrorType.ALREADY_REMOVED_HIVE_REPORT]: {
+    code: 44004,
+    message: 'Already removed hive',
+    status: HttpStatus.BAD_REQUEST,
+  },
 
   /* openai */
   // 네트워크·rate-limit 등 OpenAI SDK 오류

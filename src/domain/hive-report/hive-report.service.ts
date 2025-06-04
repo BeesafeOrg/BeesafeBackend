@@ -15,6 +15,8 @@ import { HiveReportsResponseDto } from './dto/hive-reports-response.dto';
 import { PaginatedDto } from '../../common/dto/paginated.dto';
 import { HiveActionType } from './constant/hive-actions-type.enum';
 import { HiveAction } from './entities/hive-action.entity';
+import { MemberRole } from '../member/constant/member-role.enum';
+import { Species } from './constant/species.enum';
 
 @Injectable()
 export class HiveReportService {
@@ -109,6 +111,7 @@ export class HiveReportService {
 
   async findMyReports(
     memberId: string,
+    memberRole: MemberRole,
     page: number,
     size: number,
     statusFilter?: HiveReportStatus,
@@ -116,13 +119,18 @@ export class HiveReportService {
     const take = Math.min(size);
     const skip = (page - 1) * take;
 
+    const actionType =
+      memberRole === MemberRole.BEEKEEPER
+        ? HiveActionType.HONEYBEE_PROOF
+        : HiveActionType.REPORT;
+
     const qb = this.hiveReportRepo
       .createQueryBuilder('report')
       .innerJoin(
         'report.actions',
-        'reporterAction',
-        'reporterAction.actionType = :actionType AND reporterAction.memberId = :memberId',
-        { actionType: HiveActionType.REPORT, memberId },
+        'action',
+        'action.actionType = :actionType AND action.memberId = :memberId',
+        { actionType, memberId },
       )
       .orderBy('report.createdAt', 'DESC')
       .skip(skip)
@@ -130,6 +138,9 @@ export class HiveReportService {
 
     if (statusFilter) {
       qb.andWhere('report.status = :status', { status: statusFilter });
+    }
+    if (memberRole === MemberRole.BEEKEEPER) {
+      qb.andWhere('report.species = :species', { species: Species.HONEYBEE });
     }
 
     const [records, total] = await qb.getManyAndCount();
