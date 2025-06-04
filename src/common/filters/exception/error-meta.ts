@@ -96,7 +96,7 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
 
   /* region */
   [ErrorType.INVALID_REGION_DISTRICT_CODE]: {
-    code: 53002,
+    code: 43001,
     message: 'Invalid region district code',
     status: HttpStatus.BAD_REQUEST,
   },
@@ -111,6 +111,11 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     code: 44002,
     message: 'Already uploaded hive report',
     status: HttpStatus.CONFLICT,
+  },
+  [ErrorType.MEMBER_AND_REPORTER_MISMATCH]: {
+    code: 44003,
+    message: 'Member(Reporter) mismatch',
+    status: HttpStatus.UNAUTHORIZED,
   },
 
   /* openai */

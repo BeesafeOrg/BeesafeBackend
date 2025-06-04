@@ -112,7 +112,11 @@ export class AuthService {
     return <number>this.configService.get('JWT_REFRESH_EXPIRES') / 1000;
   }
 
-  async rotate(memberId: string, oldRefreshTokenRedisId: string) {
+  async rotate(memberId: string, oldRefreshTokenRedisId?: string) {
+    if (!oldRefreshTokenRedisId) {
+      throw new BusinessException(ErrorType.INVALID_REFRESH_TOKEN);
+    }
+
     const member = await this.memberService.findByIdOrThrowException(memberId);
 
     const key = this.getRefreshTokenRedisKey(oldRefreshTokenRedisId);

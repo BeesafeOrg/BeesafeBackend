@@ -16,7 +16,13 @@ import { JwtResponseDto } from './dto/jwt-response.dto';
 import { SetMemberRoleDto } from './dto/set-member-role.dto';
 import { MemberRole } from '../member/constant/member-role.enum';
 import { Member } from '../member/entities/member.entity';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { RequestMember } from './dto/request-member.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -37,7 +43,7 @@ export class AuthController {
   @UseGuards(JwtRefreshGuard)
   @ApiOperation({ summary: '액세스 및 리프레시 토큰 재발급' })
   @ApiResponse({ status: 2000, description: '성공적으로 발급되었습니다.' })
-  async refresh(@Req() req: any): Promise<JwtResponseDto> {
+  async refresh(@Req() req: RequestMember): Promise<JwtResponseDto> {
     const { memberId, jti } = req.user;
     return await this.authService.rotate(memberId, jti);
   }
@@ -47,7 +53,7 @@ export class AuthController {
   @ApiBearerAuth('jwt-access')
   @ApiOperation({ summary: '로그아웃' })
   @ApiResponse({ status: 2000, description: '성공적으로 로그아웃 되었습니다.' })
-  async logout(@Req() req: any): Promise<void> {
+  async logout(@Req() req: RequestMember): Promise<void> {
     await this.authService.revokeAll(req.user.memberId);
   }
 
@@ -57,7 +63,7 @@ export class AuthController {
   @ApiOperation({ summary: '회원 역할 설정' })
   @ApiResponse({ status: 2000, description: '성공적으로 설정되었습니다.' })
   async setMemberRole(
-    @Req() req: any,
+    @Req() req: RequestMember,
     @Body() memberRoleDto: SetMemberRoleDto,
   ): Promise<void> {
     await this.authService.setMemberRole(req.user.memberId, memberRoleDto);

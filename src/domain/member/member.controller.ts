@@ -8,6 +8,7 @@ import { MemberRoles } from '../auth/decorators/member-roles.decorator';
 import { UpdateInterestAreaDto } from './dto/update-interest-area.dto';
 import { RegionGroupedDto } from '../region/dto/region-grouped.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { RequestMember } from '../auth/dto/request-member.dto';
 
 @Controller('members')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
@@ -18,7 +19,7 @@ export class MemberController {
   @Get('me')
   @ApiOperation({ summary: '회원 정보 조회' })
   @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
-  async getMyInfo(@Req() req: any): Promise<MemberResponseDto> {
+  async getMyInfo(@Req() req: RequestMember): Promise<MemberResponseDto> {
     const member = await this.memberService.findByIdOrThrowException(
       req.user.memberId,
     );
@@ -36,7 +37,7 @@ export class MemberController {
   @ApiOperation({ summary: '양봉업자 관심지역 설정' })
   @ApiResponse({ status: 2000, description: '성공적으로 설정되었습니다.' })
   async setInterestAreas(
-    @Req() req: any,
+    @Req() req: RequestMember,
     @Body() dto: UpdateInterestAreaDto,
   ): Promise<void> {
     await this.memberService.setInterestAreas(req.user.memberId, dto.areas);
@@ -46,7 +47,9 @@ export class MemberController {
   @MemberRoles(MemberRole.BEEKEEPER)
   @ApiOperation({ summary: '양봉업자 관심지역 조회' })
   @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
-  async getInterestAreas(@Req() req: any): Promise<RegionGroupedDto[]> {
+  async getInterestAreas(
+    @Req() req: RequestMember,
+  ): Promise<RegionGroupedDto[]> {
     return await this.memberService.getInterestAreas(req.user.memberId);
   }
 }
