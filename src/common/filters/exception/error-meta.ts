@@ -117,9 +117,9 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Member(Reporter) mismatch',
     status: HttpStatus.UNAUTHORIZED,
   },
-  [ErrorType.ALREADY_REMOVED_HIVE_REPORT]: {
+  [ErrorType.INVALID_HIVE_REPORT_STATUS]: {
     code: 44004,
-    message: 'Already removed hive',
+    message: 'Invalid hive report status',
     status: HttpStatus.BAD_REQUEST,
   },
 

@@ -16,14 +16,14 @@ export class HiveAction extends BaseEntity {
   @Column({ type: 'enum', enum: HiveActionType })
   actionType: HiveActionType;
 
-  @Column({ length: 255 })
-  imageUrl: string;
+  @Column({ length: 255, nullable: true })
+  imageUrl?: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
-  latitude: number;
+  latitude?: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
-  longitude: number;
+  longitude?: number;
 
   @OneToOne(() => Reward, (rw) => rw.actor, { cascade: true })
   reward?: Reward;

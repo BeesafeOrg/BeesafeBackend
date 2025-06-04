@@ -17,12 +17,15 @@ import { HiveActionType } from './constant/hive-actions-type.enum';
 import { HiveAction } from './entities/hive-action.entity';
 import { MemberRole } from '../member/constant/member-role.enum';
 import { Species } from './constant/species.enum';
+import { Member } from '../member/entities/member.entity';
 
 @Injectable()
 export class HiveReportService {
   constructor(
     @InjectRepository(HiveReport)
     private readonly hiveReportRepo: Repository<HiveReport>,
+    @InjectRepository(HiveAction)
+    private readonly hiveActionRepo: Repository<HiveAction>,
     private readonly memberService: MemberService,
     private readonly openaiService: OpenaiService,
     private readonly regionService: RegionService,
@@ -156,5 +159,43 @@ export class HiveReportService {
       size,
       total,
     };
+  }
+
+  async reserveReport(
+    hiveReportId: string,
+    beekeeperId: string,
+  ): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const beekeeper = await manager
+        .getRepository(Member)
+        .findOne({ where: { id: beekeeperId } });
+      if (!beekeeper) {
+        throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
+      }
+
+      const report = await manager.getRepository(HiveReport).findOne({
+        where: { id: hiveReportId, species: Species.HONEYBEE },
+        relations: ['actions'],
+      });
+      if (!report) {
+        throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
+      }
+      if (report.status !== HiveReportStatus.REPORTED) {
+        throw new BusinessException(
+          ErrorType.INVALID_HIVE_REPORT_STATUS,
+          'Already removed or reserved hive report',
+        );
+      }
+
+      const action = manager.getRepository(HiveAction).create({
+        hiveReport: report,
+        member: beekeeper,
+        actionType: HiveActionType.RESERVE,
+      });
+      await manager.getRepository(HiveAction).save(action);
+
+      report.status = HiveReportStatus.RESERVED;
+      await manager.getRepository(HiveReport).save(report);
+    });
   }
 }

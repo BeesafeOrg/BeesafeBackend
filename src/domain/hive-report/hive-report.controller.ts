@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   ParseIntPipe,
   Post,
   Query,
@@ -16,6 +17,7 @@ import { MemberRoleGuard } from '../auth/guards/member-role-guard';
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
@@ -91,5 +93,16 @@ export class HiveReportController {
       size,
       statusFilter,
     );
+  }
+
+  @Post(':hiveReportId/reserve')
+  @MemberRoles(MemberRole.BEEKEEPER)
+  @ApiParam({ name: 'hiveReportId', description: '꿀벌집신고서 ID' })
+  @ApiResponse({ status: 2000, description: '성공적으로 예약되었습니다.' })
+  async reserve(
+    @Req() req: RequestMember,
+    @Param('hiveReportId') hiveReportId: string,
+  ): Promise<void> {
+    await this.hiveReportService.reserveReport(hiveReportId, req.user.memberId);
   }
 }
