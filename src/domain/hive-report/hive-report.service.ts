@@ -11,6 +11,8 @@ import { OpenaiPromptType } from '../../common/openai/constant/openai-prompt.typ
 import { CreateHiveReportDto } from './dto/create-hive-report.dto';
 import { RegionService } from '../region/region.service';
 import { HiveReportStatus } from './constant/hive-report-status.enum';
+import { HiveReportsResponseDto } from './dto/hive-reports-response.dto';
+import { PaginatedDto } from '../../common/dto/paginated.dto';
 
 @Injectable()
 export class HiveReportService {
@@ -87,5 +89,40 @@ export class HiveReportService {
       status: HiveReportStatus.REPORTED,
     });
     await this.hiveReportRepo.save(report);
+  }
+
+  async findMyReports(
+    memberId: string,
+    page: number,
+    size: number,
+    statusFilter?: HiveReportStatus,
+  ): Promise<PaginatedDto<HiveReportsResponseDto>> {
+    const take = Math.min(size);
+    const skip = (page - 1) * take;
+
+    const qb = this.hiveReportRepo
+      .createQueryBuilder('report')
+      .where('report.reporterId = :memberId', { memberId })
+      .orderBy('report.createdAt', 'DESC')
+      .skip(skip)
+      .take(take);
+
+    if (statusFilter) {
+      qb.andWhere('report.status = :status', { status: statusFilter });
+    }
+
+    const records = await qb.getMany();
+    return {
+      results: records.map((r) => ({
+        hiveReportId: r.id,
+        species: r.species,
+        status: r.status,
+        roadAddress: r.roadAddress,
+        createdAt: r.createdAt,
+      })),
+      page,
+      size,
+      total: records.length,
+    };
   }
 }
