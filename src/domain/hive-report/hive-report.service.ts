@@ -13,6 +13,8 @@ import { RegionService } from '../region/region.service';
 import { HiveReportStatus } from './constant/hive-report-status.enum';
 import { HiveReportsResponseDto } from './dto/hive-reports-response.dto';
 import { PaginatedDto } from '../../common/dto/paginated.dto';
+import { HiveActionType } from './constant/hive-actions-type.enum';
+import { HiveAction } from './entities/hive-action.entity';
 
 @Injectable()
 export class HiveReportService {
@@ -40,22 +42,31 @@ export class HiveReportService {
         OpenaiPromptType.HIVE_REPORT_IMAGE_VISION,
       );
 
-    let record = this.hiveReportRepo.create({
-      reporter: member,
-      imageUrl,
-      aiResponseOfSpecies: species,
-      aiConfidenceOfSpecies: confidence,
-      aiReasonOfSpecies: reason,
-    });
-    record = await this.hiveReportRepo.save(record);
+    return await this.dataSource.transaction(async (manager) => {
+      const report = manager.getRepository(HiveReport).create({
+        imageUrl,
+        aiResponseOfSpecies: species,
+        aiConfidenceOfSpecies: confidence,
+        aiReasonOfSpecies: reason,
+      });
+      const savedReport = await manager.getRepository(HiveReport).save(report);
 
-    return {
-      hiveReportId: record.id,
-      imageUrl: record.imageUrl,
-      aiResponseOfSpecies: record.aiResponseOfSpecies,
-      aiConfidenceOfSpecies: record.aiConfidenceOfSpecies,
-      aiReasonOfSpecies: record.aiReasonOfSpecies,
-    };
+      const action = manager.getRepository(HiveAction).create({
+        hiveReport: savedReport,
+        member,
+        actionType: HiveActionType.REPORT,
+        imageUrl,
+      });
+      await manager.getRepository(HiveAction).save(action);
+
+      return {
+        hiveReportId: savedReport.id,
+        imageUrl: savedReport.imageUrl,
+        aiResponseOfSpecies: savedReport.aiResponseOfSpecies,
+        aiConfidenceOfSpecies: savedReport.aiConfidenceOfSpecies,
+        aiReasonOfSpecies: savedReport.aiReasonOfSpecies,
+      };
+    });
   }
 
   async finalizeReport(
@@ -64,14 +75,19 @@ export class HiveReportService {
   ): Promise<void> {
     const report = await this.hiveReportRepo.findOne({
       where: { id: dto.hiveReportId },
-      relations: ['reporter'],
+      relations: ['actions', 'actions.member'],
     });
     if (!report) {
       throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
     }
-    if (report.reporter.id != memberId) {
+
+    const reporterAction = report.actions.find(
+      (a) => a.actionType === HiveActionType.REPORT && a.member.id === memberId,
+    );
+    if (!reporterAction) {
       throw new BusinessException(ErrorType.MEMBER_AND_REPORTER_MISMATCH);
     }
+
     if (report.status) {
       throw new BusinessException(ErrorType.ALREADY_UPLOADED_HIVE_REPORT);
     }
@@ -102,7 +118,12 @@ export class HiveReportService {
 
     const qb = this.hiveReportRepo
       .createQueryBuilder('report')
-      .where('report.reporterId = :memberId', { memberId })
+      .innerJoin(
+        'report.actions',
+        'reporterAction',
+        'reporterAction.actionType = :actionType AND reporterAction.memberId = :memberId',
+        { actionType: HiveActionType.REPORT, memberId },
+      )
       .orderBy('report.createdAt', 'DESC')
       .skip(skip)
       .take(take);
@@ -111,7 +132,7 @@ export class HiveReportService {
       qb.andWhere('report.status = :status', { status: statusFilter });
     }
 
-    const records = await qb.getMany();
+    const [records, total] = await qb.getManyAndCount();
     return {
       results: records.map((r) => ({
         hiveReportId: r.id,
@@ -122,7 +143,7 @@ export class HiveReportService {
       })),
       page,
       size,
-      total: records.length,
+      total,
     };
   }
 }
