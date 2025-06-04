@@ -112,6 +112,11 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Already uploaded hive report',
     status: HttpStatus.CONFLICT,
   },
+  [ErrorType.MEMBER_AND_REPORTER_MISMATCH]: {
+    code: 44003,
+    message: 'Member(Reporter) mismatch',
+    status: HttpStatus.UNAUTHORIZED,
+  },
 
   /* openai */
   // 네트워크·rate-limit 등 OpenAI SDK 오류

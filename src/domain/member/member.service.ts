@@ -45,14 +45,14 @@ export class MemberService {
     return await this.memberRepo.save(member);
   }
 
-  async createAndSave(dto: CreateMemberDto) {
+  async createAndSave(dto: CreateMemberDto): Promise<Member> {
     const newMember = this.memberRepo.create({
       ...dto,
     });
     return await this.save(newMember);
   }
 
-  async setRole(memberId: string, role: MemberRole) {
+  async setRole(memberId: string, role: MemberRole): Promise<void> {
     const affected = await this.memberRepo.update(memberId, {
       role,
     });

@@ -56,12 +56,19 @@ export class HiveReportService {
     };
   }
 
-  async finalizeReport(dto: CreateHiveReportDto): Promise<void> {
+  async finalizeReport(
+    memberId: string,
+    dto: CreateHiveReportDto,
+  ): Promise<void> {
     const report = await this.hiveReportRepo.findOne({
       where: { id: dto.hiveReportId },
+      relations: ['reporter'],
     });
     if (!report) {
       throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
+    }
+    if (report.reporter.id != memberId) {
+      throw new BusinessException(ErrorType.MEMBER_AND_REPORTER_MISMATCH);
     }
     if (report.status) {
       throw new BusinessException(ErrorType.ALREADY_UPLOADED_HIVE_REPORT);

@@ -18,6 +18,7 @@ import { BusinessException } from '../../common/filters/exception/business-excep
 import { ErrorType } from '../../common/filters/exception/error-code.enum';
 import { CreateHiveReportDto } from './dto/create-hive-report.dto';
 import { OpenAiResponseOfHiveReportImageDto } from './dto/open-ai-response-of-hive-report-image.dto';
+import { RequestMember } from '../auth/dto/request-member.dto';
 
 @Controller('hive-reports')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
@@ -31,7 +32,7 @@ export class HiveReportController {
   @ApiOperation({ summary: '벌집 신고서 사진 업로드' })
   @ApiResponse({ status: 2000, description: '성공적으로 업로드되었습니다.' })
   async uploadFile(
-    @Req() req: any,
+    @Req() req: RequestMember,
     @UploadedFile() file: Express.MulterS3.File,
   ): Promise<OpenAiResponseOfHiveReportImageDto> {
     if (!file) {
@@ -50,8 +51,9 @@ export class HiveReportController {
   @ApiOperation({ summary: '벌집 신고서 사진 업로드' })
   @ApiResponse({ status: 2000, description: '성공적으로 업로드되었습니다.' })
   async createFinalReport(
+    @Req() req: RequestMember,
     @Body() createDto: CreateHiveReportDto,
   ): Promise<void> {
-    await this.hiveReportService.finalizeReport(createDto);
+    await this.hiveReportService.finalizeReport(req.user.memberId, createDto);
   }
 }
