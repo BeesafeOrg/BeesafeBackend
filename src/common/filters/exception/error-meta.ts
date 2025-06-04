@@ -96,7 +96,7 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
 
   /* region */
   [ErrorType.INVALID_REGION_DISTRICT_CODE]: {
-    code: 53002,
+    code: 43001,
     message: 'Invalid region district code',
     status: HttpStatus.BAD_REQUEST,
   },
