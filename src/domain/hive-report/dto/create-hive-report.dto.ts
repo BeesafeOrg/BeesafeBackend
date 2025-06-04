@@ -1,4 +1,10 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsLatitude,
+  IsLongitude,
+  IsNotEmpty,
+  IsString,
+} from 'class-validator';
 import { Species } from '../constant/species.enum';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -22,14 +28,14 @@ export class CreateHiveReportDto {
     description: '벌집 위치 (사용자 현위치 - 위도)',
     example: 37.123456,
   })
-  @IsNumber()
+  @IsLatitude()
   latitude: number;
 
   @ApiProperty({
     description: '벌집 위치 (사용자 현위치 - 경도)',
     example: 127.654321,
   })
-  @IsNumber()
+  @IsLongitude()
   longitude: number;
 
   @ApiProperty({

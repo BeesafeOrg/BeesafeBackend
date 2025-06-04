@@ -1,0 +1,5 @@
+export enum HiveActionType {
+  REPORT = 'REPORT',
+  WASP_PROOF = 'WASP_PROOF',
+  HONEYBEE_PROOF = 'HONEYBEE_PROOF',
+}

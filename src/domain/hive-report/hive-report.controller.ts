@@ -1,7 +1,8 @@
 import {
   Body,
   Controller,
-  Get, ParseIntPipe,
+  Get,
+  ParseIntPipe,
   Post,
   Query,
   Req,
@@ -38,7 +39,7 @@ export class HiveReportController {
 
   @Post('image')
   @UseInterceptors(FileInterceptor('file'))
-  @MemberRoles(MemberRole.BEEKEEPER)
+  @MemberRoles(MemberRole.REPORTER)
   @ApiOperation({ summary: '벌집 신고서 사진 업로드' })
   @ApiResponse({ status: 2000, description: '성공적으로 업로드되었습니다.' })
   async uploadFile(
@@ -57,7 +58,7 @@ export class HiveReportController {
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
-  @MemberRoles(MemberRole.BEEKEEPER)
+  @MemberRoles(MemberRole.REPORTER)
   @ApiOperation({ summary: '벌집 신고서 사진 업로드' })
   @ApiResponse({ status: 2000, description: '성공적으로 업로드되었습니다.' })
   async createFinalReport(
@@ -68,6 +69,7 @@ export class HiveReportController {
   }
 
   @Get('me')
+  @MemberRoles(MemberRole.REPORTER)
   @ApiOperation({ summary: '나의 벌집 신고서 조회' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'size', required: false, type: Number, example: 20 })
@@ -80,7 +82,7 @@ export class HiveReportController {
   async getMyReports(
     @Req() req: RequestMember,
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,
-    @Query('limit', new ParseIntPipe({ optional: true })) size = 100,
+    @Query('size', new ParseIntPipe({ optional: true })) size = 100,
     @Query('statusFilter') statusFilter?: HiveReportStatus,
   ): Promise<PaginatedDto<HiveReportsResponseDto>> {
     return await this.hiveReportService.findMyReports(
