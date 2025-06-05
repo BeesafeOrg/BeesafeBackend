@@ -1,4 +1,4 @@
-import { Module, OnApplicationBootstrap } from '@nestjs/common';
+import { Logger, Module, OnApplicationBootstrap } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { DatabaseModule } from './common/database/database.module';
 import { ConfigModule } from '@nestjs/config';
@@ -12,6 +12,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { RegionSeedService } from './domain/region/constant/region-seed.service';
 import { S3Module } from './common/s3/s3.module';
 import { OpenaiModule } from './common/openai/openai.module';
+import { tz } from './common/utils/date-util';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ export class AppModule implements OnApplicationBootstrap {
   constructor(private readonly regionSeedService: RegionSeedService) {}
 
   async onApplicationBootstrap() {
+    Logger.debug(tz().format('YYYY-MM-DD  HH:mm:ss'));
     await this.regionSeedService.sync();
   }
 }
