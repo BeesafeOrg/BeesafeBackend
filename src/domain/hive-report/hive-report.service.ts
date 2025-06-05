@@ -15,12 +15,16 @@ import { HiveReportsResponseDto } from './dto/hive-reports-response.dto';
 import { PaginatedDto } from '../../common/dto/paginated.dto';
 import { HiveActionType } from './constant/hive-actions-type.enum';
 import { HiveAction } from './entities/hive-action.entity';
+import { MemberRole } from '../member/constant/member-role.enum';
+import { Species } from './constant/species.enum';
 
 @Injectable()
 export class HiveReportService {
   constructor(
     @InjectRepository(HiveReport)
     private readonly hiveReportRepo: Repository<HiveReport>,
+    @InjectRepository(HiveAction)
+    private readonly hiveActionRepo: Repository<HiveAction>,
     private readonly memberService: MemberService,
     private readonly openaiService: OpenaiService,
     private readonly regionService: RegionService,
@@ -109,6 +113,7 @@ export class HiveReportService {
 
   async findMyReports(
     memberId: string,
+    memberRole: MemberRole,
     page: number,
     size: number,
     statusFilter?: HiveReportStatus,
@@ -116,34 +121,144 @@ export class HiveReportService {
     const take = Math.min(size);
     const skip = (page - 1) * take;
 
-    const qb = this.hiveReportRepo
+    const actionTypes =
+      memberRole === MemberRole.BEEKEEPER
+        ? [HiveActionType.HONEYBEE_PROOF, HiveActionType.RESERVE]
+        : [HiveActionType.WASP_PROOF, HiveActionType.REPORT];
+
+    const member = await this.memberService.findByIdOrThrowException(memberId);
+
+    const qbBase = this.hiveReportRepo
       .createQueryBuilder('report')
       .innerJoin(
         'report.actions',
-        'reporterAction',
-        'reporterAction.actionType = :actionType AND reporterAction.memberId = :memberId',
-        { actionType: HiveActionType.REPORT, memberId },
+        'a',
+        'a.actionType IN (:...actionTypes) AND a.memberId = :memberId',
+        {
+          actionTypes,
+          memberId: member.id,
+        },
+      );
+
+    if (statusFilter) {
+      qbBase.andWhere('report.status = :status', { status: statusFilter });
+    }
+    if (memberRole === MemberRole.BEEKEEPER) {
+      qbBase.andWhere('report.species = :species', {
+        species: Species.HONEYBEE,
+      });
+    }
+
+    const qb = qbBase
+      .clone()
+      .leftJoin(
+        'report.actions',
+        'reserveAction',
+        'reserveAction.actionType = :reserveType AND reserveAction.memberId = :memberId',
+        { reserveType: HiveActionType.RESERVE, memberId: member.id },
       )
+      .addSelect('reserveAction.id', 'reserveActionId') // ← 액션 ID만 추가로 가져옴
       .orderBy('report.createdAt', 'DESC')
       .skip(skip)
       .take(take);
 
-    if (statusFilter) {
-      qb.andWhere('report.status = :status', { status: statusFilter });
+    const { entities: reports, raw } = await qb.getRawAndEntities();
+    const total = await qbBase.getCount();
+
+    const rawByReportId = new Map<string, any>();
+    for (const r of raw) {
+      if (!rawByReportId.has(r.report_id)) rawByReportId.set(r.report_id, r);
     }
 
-    const [records, total] = await qb.getManyAndCount();
     return {
-      results: records.map((r) => ({
-        hiveReportId: r.id,
-        species: r.species,
-        status: r.status,
-        roadAddress: r.roadAddress,
-        createdAt: r.createdAt,
-      })),
+      results: reports.map((r) => {
+        const row = rawByReportId.get(r.id);
+        return {
+          hiveReportId: r.id,
+          species: r.species,
+          status: r.status,
+          roadAddress: r.roadAddress,
+          createdAt: r.createdAt,
+          ...(memberRole === MemberRole.BEEKEEPER &&
+            r.status === HiveReportStatus.RESERVED &&
+            row?.reserveActionId && { hiveActionId: row.reserveActionId }),
+        };
+      }),
       page,
-      size,
+      size: take,
       total,
     };
+  }
+
+  async reserveReport(
+    hiveReportId: string,
+    beekeeperId: string,
+  ): Promise<void> {
+    const beekeeper =
+      await this.memberService.findByIdOrThrowException(beekeeperId);
+
+    await this.dataSource.transaction(async (manager) => {
+      let report = await manager.getRepository(HiveReport).findOne({
+        where: { id: hiveReportId, species: Species.HONEYBEE },
+        relations: ['actions'],
+      });
+      if (!report) {
+        throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
+      }
+      if (report.status !== HiveReportStatus.REPORTED) {
+        throw new BusinessException(
+          ErrorType.INVALID_HIVE_REPORT_STATUS,
+          'Already removed or reserved hive report',
+        );
+      }
+
+      report.status = HiveReportStatus.RESERVED;
+      const action = manager.create(HiveAction, {
+        member: beekeeper,
+        actionType: HiveActionType.RESERVE,
+      });
+      report.actions.push(action);
+      await manager.save(report);
+    });
+  }
+
+  async cancelReservation(
+    hiveReportId: string,
+    hiveActionId: string,
+    beekeeperId: string,
+  ): Promise<void> {
+    const beekeeper =
+      await this.memberService.findByIdOrThrowException(beekeeperId);
+
+    await this.dataSource.transaction(async (manager) => {
+      const report = await manager.getRepository(HiveReport).findOne({
+        where: { id: hiveReportId, status: HiveReportStatus.RESERVED },
+        relations: ['actions', 'actions.member'],
+      });
+      if (!report) {
+        throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
+      }
+
+      const reserveAction = report.actions.find(
+        (a) =>
+          a.id === hiveActionId &&
+          a.actionType === HiveActionType.RESERVE &&
+          a.member.id === beekeeperId,
+      );
+      if (!reserveAction) {
+        throw new BusinessException(
+          ErrorType.HIVE_REPORT_NOT_FOUND,
+          'No active reservation for this member',
+        );
+      }
+
+      report.status = HiveReportStatus.REPORTED;
+      const action = manager.create(HiveAction, {
+        member: beekeeper,
+        actionType: HiveActionType.CANCEL_RESERVE,
+      });
+      report.actions.push(action);
+      await manager.save(report);
+    });
   }
 }
