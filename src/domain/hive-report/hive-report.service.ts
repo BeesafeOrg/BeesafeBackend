@@ -129,7 +129,7 @@ export class HiveReportService {
 
     const member = await this.memberService.findByIdOrThrowException(memberId);
 
-    const qb = this.hiveReportRepo
+    const qbBase = this.hiveReportRepo
       .createQueryBuilder('report')
       .innerJoin(
         'report.actions',
@@ -139,27 +139,52 @@ export class HiveReportService {
           actionTypes,
           memberId: member.id,
         },
+      );
+
+    if (statusFilter) {
+      qbBase.andWhere('report.status = :status', { status: statusFilter });
+    }
+    if (memberRole === MemberRole.BEEKEEPER) {
+      qbBase.andWhere('report.species = :species', {
+        species: Species.HONEYBEE,
+      });
+    }
+
+    const qb = qbBase
+      .clone()
+      .leftJoin(
+        'report.actions',
+        'reserveAction',
+        'reserveAction.actionType = :reserveType AND reserveAction.memberId = :memberId',
+        { reserveType: HiveActionType.RESERVE, memberId: member.id },
       )
+      .addSelect('reserveAction.id', 'reserveActionId') // ← 액션 ID만 추가로 가져옴
       .orderBy('report.createdAt', 'DESC')
       .skip(skip)
       .take(take);
 
-    if (statusFilter) {
-      qb.andWhere('report.status = :status', { status: statusFilter });
-    }
-    if (memberRole === MemberRole.BEEKEEPER) {
-      qb.andWhere('report.species = :species', { species: Species.HONEYBEE });
+    const { entities: reports, raw } = await qb.getRawAndEntities();
+    const total = await qbBase.getCount();
+
+    const rawByReportId = new Map<string, any>();
+    for (const r of raw) {
+      if (!rawByReportId.has(r.report_id)) rawByReportId.set(r.report_id, r);
     }
 
-    const [records, total] = await qb.getManyAndCount();
     return {
-      results: records.map((r) => ({
-        hiveReportId: r.id,
-        species: r.species,
-        status: r.status,
-        roadAddress: r.roadAddress,
-        createdAt: r.createdAt,
-      })),
+      results: reports.map((r) => {
+        const row = rawByReportId.get(r.id);
+        return {
+          hiveReportId: r.id,
+          species: r.species,
+          status: r.status,
+          roadAddress: r.roadAddress,
+          createdAt: r.createdAt,
+          ...(memberRole === MemberRole.BEEKEEPER &&
+            r.status === HiveReportStatus.RESERVED &&
+            row?.reserveActionId && { hiveActionId: row.reserveActionId }),
+        };
+      }),
       page,
       size: take,
       total,
@@ -218,7 +243,6 @@ export class HiveReportService {
         throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
       }
 
-      console.log(`${beekeeper.id}, ${hiveReportId}`);
       const reserveAction = report.actions.find(
         (a) =>
           a.actionType === HiveActionType.RESERVE &&
@@ -243,81 +267,3 @@ export class HiveReportService {
     });
   }
 }
-
-/*
-HiveReport {
-  id: '4b772de6-ba89-4492-aceb-ed1bde60ac18',
-  createdAt: 2025-06-03T21:52:49.382Z,
-  updatedAt: 2025-06-04T03:38:39.638Z,
-  actions: [
-    HiveAction {
-      id: '19f9d9a8-9e14-494b-8aa5-88e092b155e2',
-      createdAt: 2025-06-03T21:52:49.413Z,
-      updatedAt: 2025-06-03T21:52:49.413Z,
-      hiveReport: undefined,
-      member: [Member],
-      actionType: 'REPORT',
-      imageUrl: 'https://regreen-bucket.s3.ap-northeast-2.amazonaws.com/beesafe/bee2-1749019964736.png',
-      latitude: null,
-      longitude: null,
-      reward: undefined
-    }
-  ],
-  latitude: '37.123456',
-  longitude: '127.654321',
-  species: 'HONEYBEE',
-  aiResponseOfSpecies: 'HONEYBEE',
-  aiConfidenceOfSpecies: 0,
-  aiReasonOfSpecies: '벌집의 형태와 벌들이 많아 꿀벌로 판단했습니다.',
-  status: 'REPORTED',
-  roadAddress: '종로구 청운동 1-1',
-  districtCode: '11110',
-  region: undefined,
-  imageUrl: 'https://regreen-bucket.s3.ap-northeast-2.amazonaws.com/beesafe/bee2-1749019964736.png'
-}
-HiveAction {
-  id: '08f49b97-013c-415f-8231-734dda34eb24',
-  createdAt: 2025-06-04T03:40:06.648Z,
-  updatedAt: 2025-06-04T03:40:06.648Z,
-  hiveReport: HiveReport {
-    id: '4b772de6-ba89-4492-aceb-ed1bde60ac18',
-    createdAt: 2025-06-03T21:52:49.382Z,
-    updatedAt: 2025-06-04T03:38:39.638Z,
-    actions: [ [HiveAction] ],
-    latitude: '37.123456',
-    longitude: '127.654321',
-    species: 'HONEYBEE',
-    aiResponseOfSpecies: 'HONEYBEE',
-    aiConfidenceOfSpecies: 0,
-    aiReasonOfSpecies: '벌집의 형태와 벌들이 많아 꿀벌로 판단했습니다.',
-    status: 'REPORTED',
-    roadAddress: '종로구 청운동 1-1',
-    districtCode: '11110',
-    region: undefined,
-    imageUrl: 'https://regreen-bucket.s3.ap-northeast-2.amazonaws.com/beesafe/bee2-1749019964736.png'
-  },
-  member: Member {
-    id: '9674fa69-cbc6-4991-80da-d48d77240a66',
-    createdAt: 2025-06-04T05:31:25.000Z,
-    updatedAt: 2025-06-04T05:31:28.000Z,
-    role: 'BEEKEEPER',
-    email: 'jin@naver.com',
-    nickname: '구현',
-    profileImageUrl: 'url',
-    rewards: undefined,
-    interestAreas: undefined,
-    notifications: undefined
-  },
-  actionType: 'RESERVE',
-  imageUrl: null,
-  latitude: null,
-  longitude: null,
-  reward: undefined
-}
-[Nest] 10129  - 06/04/2025, 9:40:06 PM     LOG [REQ] localhost:4000 POST /api/hive-reports/4b772de6-ba89-4492-aceb-ed1bde60ac18/reserve +121ms
-
-
-
-
-
- */

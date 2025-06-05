@@ -3,6 +3,7 @@ import { HiveReportStatus } from '../constant/hive-report-status.enum';
 
 export class HiveReportsResponseDto {
   hiveReportId: string;
+  hiveActionId?: string;
   species: Species;
   status: HiveReportStatus;
   roadAddress: string;
