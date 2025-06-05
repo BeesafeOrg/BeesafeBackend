@@ -11,12 +11,13 @@ import { OpenaiPromptType } from '../../common/openai/constant/openai-prompt.typ
 import { CreateHiveReportDto } from './dto/create-hive-report.dto';
 import { RegionService } from '../region/region.service';
 import { HiveReportStatus } from './constant/hive-report-status.enum';
-import { HiveReportsResponseDto } from './dto/hive-reports-response.dto';
+import { HiveReportResponseDto } from './dto/hive-report-response.dto';
 import { PaginatedDto } from '../../common/dto/paginated.dto';
 import { HiveActionType } from './constant/hive-actions-type.enum';
 import { HiveAction } from './entities/hive-action.entity';
 import { MemberRole } from '../member/constant/member-role.enum';
 import { Species } from './constant/species.enum';
+import { HiveReportDetailResponseDto } from './dto/hive-report-detail-response.dto';
 
 @Injectable()
 export class HiveReportService {
@@ -117,7 +118,7 @@ export class HiveReportService {
     page: number,
     size: number,
     statusFilter?: HiveReportStatus,
-  ): Promise<PaginatedDto<HiveReportsResponseDto>> {
+  ): Promise<PaginatedDto<HiveReportResponseDto>> {
     const take = Math.min(size);
     const skip = (page - 1) * take;
 
@@ -257,5 +258,61 @@ export class HiveReportService {
       report.actions = report.actions.filter((a) => a.id !== reserveAction.id);
       await manager.save(report);
     });
+  }
+
+  async findReportDetails(
+    hiveReportId: string,
+    memberId: string,
+  ): Promise<HiveReportDetailResponseDto> {
+    const { entities, raw } = await this.hiveReportRepo
+      .createQueryBuilder('r')
+      .innerJoin(
+        'r.actions',
+        'reportAct',
+        'reportAct.actionType = :reportType',
+        { reportType: HiveActionType.REPORT },
+      )
+      .innerJoin('reportAct.member', 'reporter')
+
+      .leftJoin(
+        'r.actions',
+        'reserveAct',
+        'reserveAct.actionType = :reserveType',
+        { reserveType: HiveActionType.RESERVE },
+      )
+      .leftJoin('reserveAct.member', 'beekeeper')
+
+      .addSelect([
+        'reporter.id',
+        'reporter.nickname',
+        'beekeeper.id',
+        'beekeeper.nickname',
+      ])
+      .where('r.id = :id', { id: hiveReportId })
+      .getRawAndEntities();
+
+    /* 2) 결과 가공 */
+    const record = entities[0];
+    const reporterId = raw[0].reporter_id as string;
+    const reporterNickname = raw[0].reporter_nickname as string;
+    const beekeeperId = raw[0].beekeeper_id as string | null;
+    const beekeeperNickname = raw[0].beekeeper_nickname as string | null;
+    const isMe = memberId === reporterId;
+
+    return {
+      isMe,
+      hiveReportId: record.id,
+      reporter: { memberId: reporterId, nickname: reporterNickname },
+      beekeeper: beekeeperId
+        ? { memberId: beekeeperId, nickname: beekeeperNickname }
+        : null,
+      imageUrl: record.imageUrl,
+      species: record.species,
+      latitude: record.latitude,
+      longitude: record.longitude,
+      roadAddress: record.roadAddress,
+      status: record.status,
+      createdAt: record.createdAt,
+    };
   }
 }
