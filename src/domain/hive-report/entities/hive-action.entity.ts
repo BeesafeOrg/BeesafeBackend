@@ -8,7 +8,6 @@ import { Reward } from './reward.entity';
 @Entity('hive_action')
 export class HiveAction extends BaseEntity {
   @ManyToOne(() => HiveReport, (r) => r.actions, {
-    cascade: ['insert'],
     nullable: false,
   })
   @JoinColumn()
