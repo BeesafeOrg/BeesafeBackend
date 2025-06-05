@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToOne } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/database/base.entity';
 import { HiveReport } from './hive-report.entity';
 import { Member } from '../../member/entities/member.entity';
@@ -7,10 +7,15 @@ import { Reward } from './reward.entity';
 
 @Entity('hive_action')
 export class HiveAction extends BaseEntity {
-  @ManyToOne(() => HiveReport, (r) => r.actions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => HiveReport, (r) => r.actions, {
+    cascade: ['insert'],
+    nullable: false,
+  })
+  @JoinColumn()
   hiveReport: HiveReport;
 
   @ManyToOne(() => Member, { eager: true })
+  @JoinColumn({ name: 'memberId' })
   member: Member;
 
   @Column({ type: 'enum', enum: HiveActionType })

@@ -122,18 +122,23 @@ export class HiveReportService {
     const take = Math.min(size);
     const skip = (page - 1) * take;
 
-    const actionType =
+    const actionTypes =
       memberRole === MemberRole.BEEKEEPER
-        ? HiveActionType.HONEYBEE_PROOF
-        : HiveActionType.REPORT;
+        ? [HiveActionType.HONEYBEE_PROOF, HiveActionType.RESERVE]
+        : [HiveActionType.WASP_PROOF, HiveActionType.REPORT];
+
+    const member = await this.memberService.findByIdOrThrowException(memberId);
 
     const qb = this.hiveReportRepo
       .createQueryBuilder('report')
       .innerJoin(
         'report.actions',
-        'action',
-        'action.actionType = :actionType AND action.memberId = :memberId',
-        { actionType, memberId },
+        'a',
+        'a.actionType IN (:...actionTypes) AND a.memberId = :memberId',
+        {
+          actionTypes,
+          memberId: member.id,
+        },
       )
       .orderBy('report.createdAt', 'DESC')
       .skip(skip)
@@ -156,7 +161,7 @@ export class HiveReportService {
         createdAt: r.createdAt,
       })),
       page,
-      size,
+      size: take,
       total,
     };
   }
@@ -165,15 +170,11 @@ export class HiveReportService {
     hiveReportId: string,
     beekeeperId: string,
   ): Promise<void> {
-    await this.dataSource.transaction(async (manager) => {
-      const beekeeper = await manager
-        .getRepository(Member)
-        .findOne({ where: { id: beekeeperId } });
-      if (!beekeeper) {
-        throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
-      }
+    const beekeeper =
+      await this.memberService.findByIdOrThrowException(beekeeperId);
 
-      const report = await manager.getRepository(HiveReport).findOne({
+    await this.dataSource.transaction(async (manager) => {
+      let report = await manager.getRepository(HiveReport).findOne({
         where: { id: hiveReportId, species: Species.HONEYBEE },
         relations: ['actions'],
       });
@@ -187,15 +188,136 @@ export class HiveReportService {
         );
       }
 
-      const action = manager.getRepository(HiveAction).create({
-        hiveReport: report,
+      report.status = HiveReportStatus.RESERVED;
+      const action = manager.create(HiveAction, {
         member: beekeeper,
         actionType: HiveActionType.RESERVE,
       });
-      await manager.getRepository(HiveAction).save(action);
+      report.actions.push(action);
+      await manager.save(report);
+    });
+  }
 
-      report.status = HiveReportStatus.RESERVED;
+  async cancelReservation(
+    hiveReportId: string,
+    beekeeperId: string,
+  ): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const beekeeper = await manager
+        .getRepository(Member)
+        .findOne({ where: { id: beekeeperId } });
+      if (!beekeeper) {
+        throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
+      }
+
+      const report = await manager.getRepository(HiveReport).findOne({
+        where: { id: hiveReportId, status: HiveReportStatus.RESERVED },
+        relations: ['actions', 'actions.member'],
+      });
+      if (!report) {
+        throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
+      }
+
+      console.log(`${beekeeper.id}, ${hiveReportId}`);
+      const reserveAction = report.actions.find(
+        (a) =>
+          a.actionType === HiveActionType.RESERVE &&
+          a.member.id === beekeeperId,
+      );
+      if (!reserveAction) {
+        throw new BusinessException(
+          ErrorType.HIVE_REPORT_NOT_FOUND,
+          'No active reservation for this user',
+        );
+      }
+
+      const cancelAction = manager.getRepository(HiveAction).create({
+        hiveReport: report,
+        member: beekeeper,
+        actionType: HiveActionType.CANCEL_RESERVE,
+      });
+      await manager.getRepository(HiveAction).save(cancelAction);
+
+      report.status = HiveReportStatus.REPORTED;
       await manager.getRepository(HiveReport).save(report);
     });
   }
 }
+
+/*
+HiveReport {
+  id: '4b772de6-ba89-4492-aceb-ed1bde60ac18',
+  createdAt: 2025-06-03T21:52:49.382Z,
+  updatedAt: 2025-06-04T03:38:39.638Z,
+  actions: [
+    HiveAction {
+      id: '19f9d9a8-9e14-494b-8aa5-88e092b155e2',
+      createdAt: 2025-06-03T21:52:49.413Z,
+      updatedAt: 2025-06-03T21:52:49.413Z,
+      hiveReport: undefined,
+      member: [Member],
+      actionType: 'REPORT',
+      imageUrl: 'https://regreen-bucket.s3.ap-northeast-2.amazonaws.com/beesafe/bee2-1749019964736.png',
+      latitude: null,
+      longitude: null,
+      reward: undefined
+    }
+  ],
+  latitude: '37.123456',
+  longitude: '127.654321',
+  species: 'HONEYBEE',
+  aiResponseOfSpecies: 'HONEYBEE',
+  aiConfidenceOfSpecies: 0,
+  aiReasonOfSpecies: '벌집의 형태와 벌들이 많아 꿀벌로 판단했습니다.',
+  status: 'REPORTED',
+  roadAddress: '종로구 청운동 1-1',
+  districtCode: '11110',
+  region: undefined,
+  imageUrl: 'https://regreen-bucket.s3.ap-northeast-2.amazonaws.com/beesafe/bee2-1749019964736.png'
+}
+HiveAction {
+  id: '08f49b97-013c-415f-8231-734dda34eb24',
+  createdAt: 2025-06-04T03:40:06.648Z,
+  updatedAt: 2025-06-04T03:40:06.648Z,
+  hiveReport: HiveReport {
+    id: '4b772de6-ba89-4492-aceb-ed1bde60ac18',
+    createdAt: 2025-06-03T21:52:49.382Z,
+    updatedAt: 2025-06-04T03:38:39.638Z,
+    actions: [ [HiveAction] ],
+    latitude: '37.123456',
+    longitude: '127.654321',
+    species: 'HONEYBEE',
+    aiResponseOfSpecies: 'HONEYBEE',
+    aiConfidenceOfSpecies: 0,
+    aiReasonOfSpecies: '벌집의 형태와 벌들이 많아 꿀벌로 판단했습니다.',
+    status: 'REPORTED',
+    roadAddress: '종로구 청운동 1-1',
+    districtCode: '11110',
+    region: undefined,
+    imageUrl: 'https://regreen-bucket.s3.ap-northeast-2.amazonaws.com/beesafe/bee2-1749019964736.png'
+  },
+  member: Member {
+    id: '9674fa69-cbc6-4991-80da-d48d77240a66',
+    createdAt: 2025-06-04T05:31:25.000Z,
+    updatedAt: 2025-06-04T05:31:28.000Z,
+    role: 'BEEKEEPER',
+    email: 'jin@naver.com',
+    nickname: '구현',
+    profileImageUrl: 'url',
+    rewards: undefined,
+    interestAreas: undefined,
+    notifications: undefined
+  },
+  actionType: 'RESERVE',
+  imageUrl: null,
+  latitude: null,
+  longitude: null,
+  reward: undefined
+}
+[Nest] 10129  - 06/04/2025, 9:40:06 PM     LOG [REQ] localhost:4000 POST /api/hive-reports/4b772de6-ba89-4492-aceb-ed1bde60ac18/reserve +121ms
+
+
+
+
+
+ */
