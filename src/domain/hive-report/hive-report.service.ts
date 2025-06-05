@@ -253,11 +253,8 @@ export class HiveReportService {
       }
 
       report.status = HiveReportStatus.REPORTED;
-      const action = manager.create(HiveAction, {
-        member: beekeeper,
-        actionType: HiveActionType.CANCEL_RESERVE,
-      });
-      report.actions.push(action);
+      await manager.getRepository(HiveAction).delete(reserveAction.id);
+      report.actions = report.actions.filter((a) => a.id !== reserveAction.id);
       await manager.save(report);
     });
   }

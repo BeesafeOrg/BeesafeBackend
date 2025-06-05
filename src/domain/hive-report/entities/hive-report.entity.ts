@@ -7,7 +7,9 @@ import { HiveAction } from './hive-action.entity';
 
 @Entity('hive_report')
 export class HiveReport extends BaseEntity {
-  @OneToMany(() => HiveAction, (a) => a.hiveReport, { cascade: true })
+  @OneToMany(() => HiveAction, (a) => a.hiveReport, {
+    cascade: true,
+  })
   actions: HiveAction[];
 
   @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
