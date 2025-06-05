@@ -30,9 +30,10 @@ import { ErrorType } from '../../common/filters/exception/error-code.enum';
 import { CreateHiveReportDto } from './dto/create-hive-report.dto';
 import { OpenAiResponseOfHiveReportImageDto } from './dto/open-ai-response-of-hive-report-image.dto';
 import { RequestMember } from '../auth/dto/request-member.dto';
-import { HiveReportsResponseDto } from './dto/hive-reports-response.dto';
+import { HiveReportResponseDto } from './dto/hive-report-response.dto';
 import { HiveReportStatus } from './constant/hive-report-status.enum';
 import { PaginatedDto } from '../../common/dto/paginated.dto';
+import { HiveReportDetailResponseDto } from './dto/hive-report-detail-response.dto';
 
 @Controller('hive-reports')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
@@ -86,7 +87,7 @@ export class HiveReportController {
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,
     @Query('size', new ParseIntPipe({ optional: true })) size = 100,
     @Query('statusFilter') statusFilter?: HiveReportStatus,
-  ): Promise<PaginatedDto<HiveReportsResponseDto>> {
+  ): Promise<PaginatedDto<HiveReportResponseDto>> {
     return await this.hiveReportService.findMyReports(
       req.user.memberId,
       req.user.role,
@@ -125,6 +126,20 @@ export class HiveReportController {
     await this.hiveReportService.cancelReservation(
       hiveReportId,
       hiveActionId,
+      req.user.memberId,
+    );
+  }
+
+  @Get(':hiveReportId')
+  @ApiOperation({ summary: '벌집 신고서 상세 조회' })
+  @ApiParam({ name: 'hiveReportId', description: '꿀벌집신고서 ID' })
+  @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
+  async getReportDetails(
+    @Req() req: RequestMember,
+    @Param('hiveReportId') hiveReportId: string,
+  ): Promise<HiveReportDetailResponseDto> {
+    return await this.hiveReportService.findReportDetails(
+      hiveReportId,
       req.user.memberId,
     );
   }
