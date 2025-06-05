@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -97,6 +98,7 @@ export class HiveReportController {
 
   @Post(':hiveReportId/reserve')
   @MemberRoles(MemberRole.BEEKEEPER)
+  @ApiOperation({ summary: '꿀벌집 제거 예약' })
   @ApiParam({ name: 'hiveReportId', description: '꿀벌집신고서 ID' })
   @ApiResponse({ status: 2000, description: '성공적으로 예약되었습니다.' })
   async reserve(
@@ -104,5 +106,26 @@ export class HiveReportController {
     @Param('hiveReportId') hiveReportId: string,
   ): Promise<void> {
     await this.hiveReportService.reserveReport(hiveReportId, req.user.memberId);
+  }
+
+  @Delete(':hiveReportId/reserve-action/:hiveActionId')
+  @MemberRoles(MemberRole.BEEKEEPER)
+  @ApiOperation({ summary: '꿀벌집 제거 예약 취소' })
+  @ApiParam({ name: 'hiveReportId', description: '꿀벌집신고서 ID' })
+  @ApiParam({ name: 'hiveActionId', description: '꿀벌집신고서 예약 액션 ID' })
+  @ApiResponse({
+    status: 2000,
+    description: '성공적으로 예약이 취소되었습니다.',
+  })
+  async cancelReservation(
+    @Req() req: RequestMember,
+    @Param('hiveReportId') hiveReportId: string,
+    @Param('hiveActionId') hiveActionId: string,
+  ): Promise<void> {
+    await this.hiveReportService.cancelReservation(
+      hiveReportId,
+      hiveActionId,
+      req.user.memberId,
+    );
   }
 }

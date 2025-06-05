@@ -17,7 +17,6 @@ import { HiveActionType } from './constant/hive-actions-type.enum';
 import { HiveAction } from './entities/hive-action.entity';
 import { MemberRole } from '../member/constant/member-role.enum';
 import { Species } from './constant/species.enum';
-import { Member } from '../member/entities/member.entity';
 
 @Injectable()
 export class HiveReportService {
@@ -225,16 +224,13 @@ export class HiveReportService {
 
   async cancelReservation(
     hiveReportId: string,
+    hiveActionId: string,
     beekeeperId: string,
   ): Promise<void> {
-    await this.dataSource.transaction(async (manager) => {
-      const beekeeper = await manager
-        .getRepository(Member)
-        .findOne({ where: { id: beekeeperId } });
-      if (!beekeeper) {
-        throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
-      }
+    const beekeeper =
+      await this.memberService.findByIdOrThrowException(beekeeperId);
 
+    await this.dataSource.transaction(async (manager) => {
       const report = await manager.getRepository(HiveReport).findOne({
         where: { id: hiveReportId, status: HiveReportStatus.RESERVED },
         relations: ['actions', 'actions.member'],
@@ -245,25 +241,24 @@ export class HiveReportService {
 
       const reserveAction = report.actions.find(
         (a) =>
+          a.id === hiveActionId &&
           a.actionType === HiveActionType.RESERVE &&
           a.member.id === beekeeperId,
       );
       if (!reserveAction) {
         throw new BusinessException(
           ErrorType.HIVE_REPORT_NOT_FOUND,
-          'No active reservation for this user',
+          'No active reservation for this member',
         );
       }
 
-      const cancelAction = manager.getRepository(HiveAction).create({
-        hiveReport: report,
+      report.status = HiveReportStatus.REPORTED;
+      const action = manager.create(HiveAction, {
         member: beekeeper,
         actionType: HiveActionType.CANCEL_RESERVE,
       });
-      await manager.getRepository(HiveAction).save(cancelAction);
-
-      report.status = HiveReportStatus.REPORTED;
-      await manager.getRepository(HiveReport).save(report);
+      report.actions.push(action);
+      await manager.save(report);
     });
   }
 }
