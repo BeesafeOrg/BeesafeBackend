@@ -29,6 +29,6 @@ export class HiveAction extends BaseEntity {
   @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
   longitude?: number;
 
-  @OneToOne(() => Reward, (rw) => rw.actor, { cascade: true })
+  @OneToOne(() => Reward, (rw) => rw.action, { cascade: true })
   reward?: Reward;
 }
