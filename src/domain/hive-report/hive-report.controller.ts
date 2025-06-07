@@ -34,6 +34,8 @@ import { HiveReportResponseDto } from './dto/hive-report-response.dto';
 import { HiveReportStatus } from './constant/hive-report-status.enum';
 import { PaginatedDto } from '../../common/dto/paginated.dto';
 import { HiveReportDetailResponseDto } from './dto/hive-report-detail-response.dto';
+import { CreateProofDto } from './dto/create-proof.dto';
+import { HiveProofResponseDto } from './dto/hive-proof-response.dto';
 
 @Controller('hive-reports')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
@@ -141,6 +143,29 @@ export class HiveReportController {
     return await this.hiveReportService.findReportDetails(
       hiveReportId,
       req.user.memberId,
+    );
+  }
+
+  @Post(':hiveReportId/proof')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: '벌집 신고서 제거 인증 사진 업로드' })
+  @ApiParam({ name: 'hiveReportId', description: '꿀벌집신고서 ID' })
+  @ApiResponse({ status: 2000, description: '성공적으로 업로드되었습니다.' })
+  async proof(
+    @Req() req: RequestMember,
+    @Param('hiveReportId') hiveReportId: string,
+    @UploadedFile() file: Express.MulterS3.File,
+    @Body() proofDto: CreateProofDto,
+  ): Promise<HiveProofResponseDto> {
+    if (!file) {
+      throw new BusinessException(ErrorType.INVALID_FILE_FORMAT);
+    }
+
+    return await this.hiveReportService.proof(
+      hiveReportId,
+      req.user.memberId,
+      proofDto,
+      file.location,
     );
   }
 }
