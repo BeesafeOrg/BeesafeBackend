@@ -53,11 +53,15 @@ export class MemberService {
   }
 
   async setRole(memberId: string, role: MemberRole): Promise<void> {
-    const affected = await this.memberRepo.update(memberId, {
-      role,
-    });
-    if (!affected) {
-      throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
+    const result = await this.memberRepo
+      .createQueryBuilder()
+      .update(Member)
+      .set({ role })
+      .where('id = :id AND role IS NULL', { id: memberId })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new BusinessException(ErrorType.ALREADY_SET_ROLE);
     }
   }
 

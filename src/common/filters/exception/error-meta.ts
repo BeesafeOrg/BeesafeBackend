@@ -76,6 +76,11 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Forbidden resource (Invalid role)',
     status: HttpStatus.FORBIDDEN,
   },
+  [ErrorType.ALREADY_SET_ROLE]: {
+    code: 41007,
+    message: 'Already set role',
+    status: HttpStatus.BAD_REQUEST,
+  },
 
   /* member */
   [ErrorType.MEMBER_NOT_FOUND]: {
