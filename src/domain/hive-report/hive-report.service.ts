@@ -267,55 +267,56 @@ export class HiveReportService {
     hiveReportId: string,
     memberId: string,
   ): Promise<HiveReportDetailResponseDto> {
-    const { entities, raw } = await this.hiveReportRepo
-      .createQueryBuilder('r')
-      .innerJoin(
-        'r.actions',
-        'reportAct',
-        'reportAct.actionType = :reportType',
-        { reportType: HiveActionType.REPORT },
-      )
-      .innerJoin('reportAct.member', 'reporter')
+    const report = await this.hiveReportRepo.findOne({
+      where: { id: hiveReportId },
+      relations: ['actions', 'actions.member'],
+    });
+    if (!report) {
+      throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
+    }
 
-      .leftJoin(
-        'r.actions',
-        'reserveAct',
-        'reserveAct.actionType = :reserveType',
-        { reserveType: HiveActionType.RESERVE },
-      )
-      .leftJoin('reserveAct.member', 'beekeeper')
+    const reporterAction = report.actions.find(
+      (a) => a.actionType === HiveActionType.REPORT,
+    )!;
+    const reserveAction = report.actions.find(
+      (a) => a.actionType === HiveActionType.RESERVE,
+    );
+    const proofAction = report.actions.find((a) =>
+      [HiveActionType.WASP_PROOF, HiveActionType.HONEYBEE_PROOF].includes(
+        a.actionType,
+      ),
+    );
 
-      .addSelect([
-        'reporter.id',
-        'reporter.nickname',
-        'beekeeper.id',
-        'beekeeper.nickname',
-      ])
-      .where('r.id = :id', { id: hiveReportId })
-      .getRawAndEntities();
-
-    /* 2) 결과 가공 */
-    const record = entities[0];
-    const reporterId = raw[0].reporter_id as string;
-    const reporterNickname = raw[0].reporter_nickname as string;
-    const beekeeperId = raw[0].beekeeper_id as string | null;
-    const beekeeperNickname = raw[0].beekeeper_nickname as string | null;
-    const isMe = memberId === reporterId;
+    const reporter = {
+      memberId: reporterAction.member.id,
+      nickname: reporterAction.member.nickname,
+    };
+    const beekeeper = proofAction
+      ? {
+          memberId: proofAction.member.id,
+          nickname: proofAction.member.nickname,
+          action: proofAction.actionType,
+        }
+      : reserveAction
+        ? {
+            memberId: reserveAction.member.id,
+            nickname: reserveAction.member.nickname,
+            action: HiveActionType.RESERVE as const,
+          }
+        : null;
 
     return {
-      isMe,
-      hiveReportId: record.id,
-      reporter: { memberId: reporterId, nickname: reporterNickname },
-      beekeeper: beekeeperId
-        ? { memberId: beekeeperId, nickname: beekeeperNickname }
-        : null,
-      imageUrl: record.imageUrl,
-      species: record.species,
-      latitude: record.latitude,
-      longitude: record.longitude,
-      roadAddress: record.roadAddress,
-      status: record.status,
-      createdAt: record.createdAt,
+      isMe: memberId === reporter.memberId,
+      hiveReportId: report.id,
+      reporter,
+      beekeeper,
+      imageUrl: report.imageUrl,
+      species: report.species,
+      latitude: report.latitude,
+      longitude: report.longitude,
+      roadAddress: report.roadAddress,
+      status: report.status,
+      createdAt: report.createdAt,
     };
   }
 

@@ -77,7 +77,7 @@ export class HiveReportController {
   @Get('me')
   @ApiOperation({ summary: '나의 벌집 신고서 조회' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'size', required: false, type: Number, example: 20 })
+  @ApiQuery({ name: 'size', required: false, type: Number, example: 100 })
   @ApiQuery({
     name: 'statusFilter',
     required: false,
