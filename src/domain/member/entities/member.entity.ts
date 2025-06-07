@@ -19,6 +19,9 @@ export class Member extends BaseEntity {
   @Column({ length: 255 })
   profileImageUrl: string;
 
+  @Column({ type: 'decimal', default: 0 })
+  points: number;
+
   @OneToMany(() => Reward, (r) => r.member)
   rewards: Reward[];
 
