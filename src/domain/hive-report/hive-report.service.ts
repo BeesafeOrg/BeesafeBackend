@@ -21,6 +21,8 @@ import { HiveReportDetailResponseDto } from './dto/hive-report-detail-response.d
 import { CreateProofDto } from './dto/create-proof.dto';
 import { Reward } from './entities/reward.entity';
 import { Member } from '../member/entities/member.entity';
+import { HiveReportPinDto } from './dto/hive-report-pin.dto';
+import { HiveProofResponseDto } from './dto/hive-proof-response.dto';
 
 @Injectable()
 export class HiveReportService {
@@ -325,7 +327,7 @@ export class HiveReportService {
     memberId: string,
     proofDto: CreateProofDto,
     imageUrl: string,
-  ) {
+  ): Promise<HiveProofResponseDto> {
     const { actionType, latitude, longitude } = proofDto;
     return await this.dataSource.transaction(async (manager) => {
       const member = await manager
@@ -415,5 +417,44 @@ export class HiveReportService {
         imageUrl,
       };
     });
+  }
+
+  async findReportsInBounds(
+    minLat?: number,
+    maxLat?: number,
+    minLng?: number,
+    maxLng?: number,
+  ): Promise<HiveReportPinDto[]> {
+    const qb = this.hiveReportRepo
+      .createQueryBuilder('report')
+      .select([
+        'report.id',
+        'report.latitude',
+        'report.longitude',
+        'report.species',
+      ]);
+
+    if (
+      minLat !== undefined &&
+      maxLat !== undefined &&
+      minLng !== undefined &&
+      maxLng !== undefined
+    ) {
+      qb.where('report.latitude BETWEEN :minLat AND :maxLat', {
+        minLat,
+        maxLat,
+      }).andWhere('report.longitude BETWEEN :minLng AND :maxLng', {
+        minLng,
+        maxLng,
+      });
+    }
+
+    const reports = await qb.getMany();
+    return reports.map((report) => ({
+      hiveReportId: report.id,
+      latitude: report.latitude,
+      longitude: report.longitude,
+      species: report.species,
+    }));
   }
 }
