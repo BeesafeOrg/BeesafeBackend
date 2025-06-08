@@ -331,32 +331,53 @@ export class HiveReportService {
       const member = await manager
         .getRepository(Member)
         .findOneOrFail({ where: { id: memberId } });
-      if (!member) {
-        throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
+
+      const report = await manager.getRepository(HiveReport).findOne({
+        where: { id: hiveReportId },
+        relations: ['actions', 'actions.member'],
+      });
+      if (!report) {
+        throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
       }
 
-      const reserveAction = await manager
-        .getRepository(HiveAction)
-        .createQueryBuilder('a')
-        .innerJoin(
-          'a.hiveReport',
-          'r',
-          `r.id = :reportId AND r.status = :reservedStatus`,
-          {
-            reportId: hiveReportId,
-            reservedStatus: HiveReportStatus.RESERVED,
-          },
-        )
-        .where('a.actionType = :reserve AND a.memberId = :memberId', {
-          reserve: HiveActionType.RESERVE,
-          memberId: member.id,
-        })
-        .getOne();
-      if (!reserveAction) {
-        throw new BusinessException(
-          ErrorType.INVALID_HIVE_REPORT_STATUS,
-          'Hive report must be in RESERVED state and reserved by you',
-        );
+      const reportAction = report.actions.find(
+        (a) => a.actionType === HiveActionType.REPORT,
+      )!;
+      if (!reportAction) {
+        throw new BusinessException(ErrorType.INVALID_HIVE_REPORT_STATUS);
+      }
+
+      if (actionType === HiveActionType.HONEYBEE_PROOF) {
+        const reserveAct = await manager
+          .getRepository(HiveAction)
+          .createQueryBuilder('a')
+          .innerJoin('a.hiveReport', 'r', `r.id = :rid AND r.status = :st`, {
+            rid: hiveReportId,
+            st: HiveReportStatus.RESERVED,
+          })
+          .where('a.actionType = :t AND a.memberId = :mid', {
+            t: HiveActionType.RESERVE,
+            mid: memberId,
+          })
+          .getOne();
+        if (!reserveAct) {
+          throw new BusinessException(
+            ErrorType.INVALID_HIVE_REPORT_STATUS,
+            'Must be RESERVED by you to remove honeybee hive',
+          );
+        }
+      } else if (actionType === HiveActionType.WASP_PROOF) {
+        if (
+          report.species === Species.WASP &&
+          reportAction.member.id === memberId
+        ) {
+          // pass
+        } else {
+          throw new BusinessException(
+            ErrorType.INVALID_HIVE_REPORT_STATUS,
+            'Only reporter can remove WASP hive without reservation',
+          );
+        }
       }
 
       await manager
@@ -364,12 +385,9 @@ export class HiveReportService {
         .update(hiveReportId, { status: HiveReportStatus.REMOVED });
 
       const actionRepo = manager.getRepository(HiveAction);
-      const rewardRepo = manager.getRepository(Reward);
-      const memberRepo = manager.getRepository(Member);
-
       const proofAction = actionRepo.create({
         hiveReport: { id: hiveReportId } as HiveReport,
-        member: { id: member.id } as Member,
+        member: { id: memberId } as Member,
         actionType,
         imageUrl,
         latitude,
@@ -377,17 +395,17 @@ export class HiveReportService {
       });
       const savedAction = await actionRepo.save(proofAction);
 
+      const rewardRepo = manager.getRepository(Reward);
       const reward = rewardRepo.create({
         points: 100,
-        action: { id: savedAction.id } as HiveAction,
-        member: { id: member.id } as Member,
+        action: savedAction,
+        member: member,
       });
       const savedReward = await rewardRepo.save(reward);
-      await memberRepo.increment(
-        { id: member.id },
-        'points',
-        savedReward.points,
-      );
+
+      await manager
+        .getRepository(Member)
+        .increment({ id: memberId }, 'points', savedReward.points);
 
       return {
         hiveReportId,
