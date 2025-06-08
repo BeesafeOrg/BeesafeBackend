@@ -13,4 +13,10 @@ export class MemberResponseDto extends CreateMemberDto {
     example: 'BEEKEEPER',
   })
   role?: string;
+
+  @ApiProperty({
+    description: '회원 리워드',
+    example: '100',
+  })
+  points: number;
 }
