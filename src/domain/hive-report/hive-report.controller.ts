@@ -36,12 +36,20 @@ import { PaginatedDto } from '../../common/dto/paginated.dto';
 import { HiveReportDetailResponseDto } from './dto/hive-report-detail-response.dto';
 import { CreateProofDto } from './dto/create-proof.dto';
 import { HiveProofResponseDto } from './dto/hive-proof-response.dto';
+import { HiveReportPinDto } from './dto/hive-report-pin.dto';
 
 @Controller('hive-reports')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
 @ApiBearerAuth('jwt-access')
 export class HiveReportController {
   constructor(private readonly hiveReportService: HiveReportService) {}
+
+  @Get()
+  @ApiOperation({ summary: '지도 표시 용 벌집 신고서 조회' })
+  @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
+  async getReports(): Promise<HiveReportPinDto[]> {
+    return await this.hiveReportService.findReports();
+  }
 
   @Post('image')
   @UseInterceptors(FileInterceptor('file'))
