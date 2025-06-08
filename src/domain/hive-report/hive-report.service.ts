@@ -267,55 +267,56 @@ export class HiveReportService {
     hiveReportId: string,
     memberId: string,
   ): Promise<HiveReportDetailResponseDto> {
-    const { entities, raw } = await this.hiveReportRepo
-      .createQueryBuilder('r')
-      .innerJoin(
-        'r.actions',
-        'reportAct',
-        'reportAct.actionType = :reportType',
-        { reportType: HiveActionType.REPORT },
-      )
-      .innerJoin('reportAct.member', 'reporter')
+    const report = await this.hiveReportRepo.findOne({
+      where: { id: hiveReportId },
+      relations: ['actions', 'actions.member'],
+    });
+    if (!report) {
+      throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
+    }
 
-      .leftJoin(
-        'r.actions',
-        'reserveAct',
-        'reserveAct.actionType = :reserveType',
-        { reserveType: HiveActionType.RESERVE },
-      )
-      .leftJoin('reserveAct.member', 'beekeeper')
+    const reporterAction = report.actions.find(
+      (a) => a.actionType === HiveActionType.REPORT,
+    )!;
+    const reserveAction = report.actions.find(
+      (a) => a.actionType === HiveActionType.RESERVE,
+    );
+    const proofAction = report.actions.find((a) =>
+      [HiveActionType.WASP_PROOF, HiveActionType.HONEYBEE_PROOF].includes(
+        a.actionType,
+      ),
+    );
 
-      .addSelect([
-        'reporter.id',
-        'reporter.nickname',
-        'beekeeper.id',
-        'beekeeper.nickname',
-      ])
-      .where('r.id = :id', { id: hiveReportId })
-      .getRawAndEntities();
-
-    /* 2) 결과 가공 */
-    const record = entities[0];
-    const reporterId = raw[0].reporter_id as string;
-    const reporterNickname = raw[0].reporter_nickname as string;
-    const beekeeperId = raw[0].beekeeper_id as string | null;
-    const beekeeperNickname = raw[0].beekeeper_nickname as string | null;
-    const isMe = memberId === reporterId;
+    const reporter = {
+      memberId: reporterAction.member.id,
+      nickname: reporterAction.member.nickname,
+    };
+    const beekeeper = proofAction
+      ? {
+          memberId: proofAction.member.id,
+          nickname: proofAction.member.nickname,
+          action: proofAction.actionType,
+        }
+      : reserveAction
+        ? {
+            memberId: reserveAction.member.id,
+            nickname: reserveAction.member.nickname,
+            action: HiveActionType.RESERVE as const,
+          }
+        : null;
 
     return {
-      isMe,
-      hiveReportId: record.id,
-      reporter: { memberId: reporterId, nickname: reporterNickname },
-      beekeeper: beekeeperId
-        ? { memberId: beekeeperId, nickname: beekeeperNickname }
-        : null,
-      imageUrl: record.imageUrl,
-      species: record.species,
-      latitude: record.latitude,
-      longitude: record.longitude,
-      roadAddress: record.roadAddress,
-      status: record.status,
-      createdAt: record.createdAt,
+      isMe: memberId === reporter.memberId,
+      hiveReportId: report.id,
+      reporter,
+      beekeeper,
+      imageUrl: report.imageUrl,
+      species: report.species,
+      latitude: report.latitude,
+      longitude: report.longitude,
+      roadAddress: report.roadAddress,
+      status: report.status,
+      createdAt: report.createdAt,
     };
   }
 
@@ -330,32 +331,53 @@ export class HiveReportService {
       const member = await manager
         .getRepository(Member)
         .findOneOrFail({ where: { id: memberId } });
-      if (!member) {
-        throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
+
+      const report = await manager.getRepository(HiveReport).findOne({
+        where: { id: hiveReportId },
+        relations: ['actions', 'actions.member'],
+      });
+      if (!report) {
+        throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
       }
 
-      const reserveAction = await manager
-        .getRepository(HiveAction)
-        .createQueryBuilder('a')
-        .innerJoin(
-          'a.hiveReport',
-          'r',
-          `r.id = :reportId AND r.status = :reservedStatus`,
-          {
-            reportId: hiveReportId,
-            reservedStatus: HiveReportStatus.RESERVED,
-          },
-        )
-        .where('a.actionType = :reserve AND a.memberId = :memberId', {
-          reserve: HiveActionType.RESERVE,
-          memberId: member.id,
-        })
-        .getOne();
-      if (!reserveAction) {
-        throw new BusinessException(
-          ErrorType.INVALID_HIVE_REPORT_STATUS,
-          'Hive report must be in RESERVED state and reserved by you',
-        );
+      const reportAction = report.actions.find(
+        (a) => a.actionType === HiveActionType.REPORT,
+      )!;
+      if (!reportAction) {
+        throw new BusinessException(ErrorType.INVALID_HIVE_REPORT_STATUS);
+      }
+
+      if (actionType === HiveActionType.HONEYBEE_PROOF) {
+        const reserveAct = await manager
+          .getRepository(HiveAction)
+          .createQueryBuilder('a')
+          .innerJoin('a.hiveReport', 'r', `r.id = :rid AND r.status = :st`, {
+            rid: hiveReportId,
+            st: HiveReportStatus.RESERVED,
+          })
+          .where('a.actionType = :t AND a.memberId = :mid', {
+            t: HiveActionType.RESERVE,
+            mid: memberId,
+          })
+          .getOne();
+        if (!reserveAct) {
+          throw new BusinessException(
+            ErrorType.INVALID_HIVE_REPORT_STATUS,
+            'Must be RESERVED by you to remove honeybee hive',
+          );
+        }
+      } else if (actionType === HiveActionType.WASP_PROOF) {
+        if (
+          report.species === Species.WASP &&
+          reportAction.member.id === memberId
+        ) {
+          // pass
+        } else {
+          throw new BusinessException(
+            ErrorType.INVALID_HIVE_REPORT_STATUS,
+            'Only reporter can remove WASP hive without reservation',
+          );
+        }
       }
 
       await manager
@@ -363,12 +385,9 @@ export class HiveReportService {
         .update(hiveReportId, { status: HiveReportStatus.REMOVED });
 
       const actionRepo = manager.getRepository(HiveAction);
-      const rewardRepo = manager.getRepository(Reward);
-      const memberRepo = manager.getRepository(Member);
-
       const proofAction = actionRepo.create({
         hiveReport: { id: hiveReportId } as HiveReport,
-        member: { id: member.id } as Member,
+        member: { id: memberId } as Member,
         actionType,
         imageUrl,
         latitude,
@@ -376,17 +395,17 @@ export class HiveReportService {
       });
       const savedAction = await actionRepo.save(proofAction);
 
+      const rewardRepo = manager.getRepository(Reward);
       const reward = rewardRepo.create({
         points: 100,
-        action: { id: savedAction.id } as HiveAction,
-        member: { id: member.id } as Member,
+        action: savedAction,
+        member: member,
       });
       const savedReward = await rewardRepo.save(reward);
-      await memberRepo.increment(
-        { id: member.id },
-        'points',
-        savedReward.points,
-      );
+
+      await manager
+        .getRepository(Member)
+        .increment({ id: memberId }, 'points', savedReward.points);
 
       return {
         hiveReportId,

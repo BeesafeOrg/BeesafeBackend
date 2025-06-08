@@ -29,6 +29,7 @@ export class MemberController {
       nickname: member.nickname,
       profileImageUrl: member.profileImageUrl,
       role: member.role,
+      points: member.points,
     };
   }
 
