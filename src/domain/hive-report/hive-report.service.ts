@@ -419,9 +419,37 @@ export class HiveReportService {
     });
   }
 
-  async findReports(): Promise<HiveReportPinDto[]> {
-    const reports = await this.hiveReportRepo.find();
+  async findReportsInBounds(
+    minLat?: number,
+    maxLat?: number,
+    minLng?: number,
+    maxLng?: number,
+  ): Promise<HiveReportPinDto[]> {
+    const qb = this.hiveReportRepo
+      .createQueryBuilder('report')
+      .select([
+        'report.id',
+        'report.latitude',
+        'report.longitude',
+        'report.species',
+      ]);
 
+    if (
+      minLat !== undefined &&
+      maxLat !== undefined &&
+      minLng !== undefined &&
+      maxLng !== undefined
+    ) {
+      qb.where('report.latitude BETWEEN :minLat AND :maxLat', {
+        minLat,
+        maxLat,
+      }).andWhere('report.longitude BETWEEN :minLng AND :maxLng', {
+        minLng,
+        maxLng,
+      });
+    }
+
+    const reports = await qb.getMany();
     return reports.map((report) => ({
       hiveReportId: report.id,
       latitude: report.latitude,

@@ -47,8 +47,18 @@ export class HiveReportController {
   @Get()
   @ApiOperation({ summary: '지도 표시 용 벌집 신고서 조회' })
   @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
-  async getReports(): Promise<HiveReportPinDto[]> {
-    return await this.hiveReportService.findReports();
+  async getReports(
+    @Query('minLat') minLat?: string,
+    @Query('maxLat') maxLat?: string,
+    @Query('minLng') minLng?: string,
+    @Query('maxLng') maxLng?: string,
+  ): Promise<HiveReportPinDto[]> {
+    return this.hiveReportService.findReportsInBounds(
+      minLat ? parseFloat(minLat) : undefined,
+      maxLat ? parseFloat(maxLat) : undefined,
+      minLng ? parseFloat(minLng) : undefined,
+      maxLng ? parseFloat(maxLng) : undefined,
+    );
   }
 
   @Post('image')
