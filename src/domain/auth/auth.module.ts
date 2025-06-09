@@ -10,9 +10,16 @@ import { RedisModule } from '../../common/redis/redis.module';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { MemberRoleGuard } from './guards/member-role-guard';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [HttpModule, MemberModule, JwtModule.register({}), RedisModule],
+  imports: [
+    HttpModule,
+    MemberModule,
+    JwtModule.register({}),
+    RedisModule,
+    ConfigModule,
+  ],
   controllers: [AuthController],
   providers: [
     AuthService,

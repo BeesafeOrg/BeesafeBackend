@@ -21,13 +21,13 @@ export class HiveReport extends BaseEntity {
   @Column({ type: 'enum', enum: Species, default: Species.NONE })
   species: Species;
 
-  @Column({ type: 'enum', enum: Species })
+  @Column({ type: 'enum', enum: Species, nullable: true })
   aiResponseOfSpecies: Species;
 
-  @Column()
+  @Column({ nullable: true })
   aiConfidenceOfSpecies: number;
 
-  @Column()
+  @Column({ nullable: true })
   aiReasonOfSpecies: string;
 
   @Column({

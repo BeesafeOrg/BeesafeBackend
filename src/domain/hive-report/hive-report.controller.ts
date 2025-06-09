@@ -83,7 +83,7 @@ export class HiveReportController {
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   @MemberRoles(MemberRole.REPORTER)
-  @ApiOperation({ summary: '벌집 신고서 사진 업로드' })
+  @ApiOperation({ summary: '벌집 신고서 최종 업로드' })
   @ApiResponse({ status: 2000, description: '성공적으로 업로드되었습니다.' })
   async createFinalReport(
     @Req() req: RequestMember,

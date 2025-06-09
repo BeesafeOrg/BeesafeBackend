@@ -115,6 +115,10 @@ export class HiveReportService {
       status: HiveReportStatus.REPORTED,
     });
     await this.hiveReportRepo.save(report);
+
+    reporterAction.latitude = dto.latitude;
+    reporterAction.longitude = dto.longitude;
+    await this.hiveActionRepo.save(reporterAction);
   }
 
   async findMyReports(
@@ -298,6 +302,7 @@ export class HiveReportService {
           memberId: proofAction.member.id,
           nickname: proofAction.member.nickname,
           action: proofAction.actionType,
+          proofImageUrl: proofAction.imageUrl,
         }
       : reserveAction
         ? {

@@ -66,7 +66,7 @@ export class AuthController {
     @Req() req: RequestMember,
     @Body() memberRoleDto: SetMemberRoleDto,
   ): Promise<void> {
-    await this.authService.setMemberRole(req.user.memberId, memberRoleDto);
+    await this.authService.setMemberRole(req.user.memberId, memberRoleDto.role);
   }
 
   // 테스트용
