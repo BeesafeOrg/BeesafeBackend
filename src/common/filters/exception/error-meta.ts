@@ -127,6 +127,16 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Invalid hive report status',
     status: HttpStatus.BAD_REQUEST,
   },
+  [ErrorType.INVALID_PROOF_LOCATION]: {
+    code: 44005,
+    message: 'Invalid proof location',
+    status: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorType.INVALID_HIVE_REPORT_LOCATION_DATA]: {
+    code: 54001,
+    message: 'Hive report location data not found.',
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+  },
 
   /* openai */
   // 네트워크·rate-limit 등 OpenAI SDK 오류

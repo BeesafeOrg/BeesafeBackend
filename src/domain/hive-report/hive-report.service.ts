@@ -23,6 +23,7 @@ import { Reward } from './entities/reward.entity';
 import { Member } from '../member/entities/member.entity';
 import { HiveReportPinDto } from './dto/hive-report-pin.dto';
 import { HiveProofResponseDto } from './dto/hive-proof-response.dto';
+import { haversineDistance } from '../../common/utils/calc-distance-util';
 
 @Injectable()
 export class HiveReportService {
@@ -334,6 +335,7 @@ export class HiveReportService {
     imageUrl: string,
   ): Promise<HiveProofResponseDto> {
     const { actionType, latitude, longitude } = proofDto;
+
     return await this.dataSource.transaction(async (manager) => {
       const member = await manager
         .getRepository(Member)
@@ -371,6 +373,27 @@ export class HiveReportService {
           throw new BusinessException(
             ErrorType.INVALID_HIVE_REPORT_STATUS,
             'Must be RESERVED by you to remove honeybee hive',
+          );
+        }
+
+        if (report.latitude == null || report.longitude == null) {
+          throw new BusinessException(
+            ErrorType.INVALID_HIVE_REPORT_LOCATION_DATA,
+          );
+        }
+        const MAX_DISTANCE_METERS = 50;
+        const distance = haversineDistance(
+          report.latitude,
+          report.longitude,
+          latitude,
+          longitude,
+        );
+
+        if (distance > MAX_DISTANCE_METERS) {
+          throw new BusinessException(
+            ErrorType.INVALID_PROOF_LOCATION,
+            `The authentication location is too far from the reported location. ` +
+              `(Distance: ${distance.toFixed(1)}m, Allowed: ${MAX_DISTANCE_METERS}m)`,
           );
         }
       } else if (actionType === HiveActionType.WASP_PROOF) {

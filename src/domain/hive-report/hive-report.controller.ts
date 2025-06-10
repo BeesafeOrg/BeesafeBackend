@@ -172,18 +172,19 @@ export class HiveReportController {
   async proof(
     @Req() req: RequestMember,
     @Param('hiveReportId') hiveReportId: string,
-    @UploadedFile() file: Express.MulterS3.File,
+    // @UploadedFile() file: Express.MulterS3.File,
     @Body() proofDto: CreateProofDto,
   ): Promise<HiveProofResponseDto> {
-    if (!file) {
-      throw new BusinessException(ErrorType.INVALID_FILE_FORMAT);
-    }
+    // if (!file) {
+    //   throw new BusinessException(ErrorType.INVALID_FILE_FORMAT);
+    // }
 
     return await this.hiveReportService.proof(
       hiveReportId,
       req.user.memberId,
       proofDto,
-      file.location,
+      '',
+      // file.location,
     );
   }
 }
