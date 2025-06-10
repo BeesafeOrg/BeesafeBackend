@@ -381,7 +381,7 @@ export class HiveReportService {
             ErrorType.INVALID_HIVE_REPORT_LOCATION_DATA,
           );
         }
-        const MAX_DISTANCE_METERS = 50;
+        const MAX_DISTANCE_METERS = 30;
         const distance = haversineDistance(
           report.latitude,
           report.longitude,
