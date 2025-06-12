@@ -1,6 +1,7 @@
-export class PaginatedDto<TData> {
-  results: TData[];
+export class PaginatedDto<T, M = {}> {
+  results: T[];
   page: number;
   size: number;
   total: number;
+  meta?: M;
 }

@@ -124,20 +124,19 @@ export class HiveReportService {
 
   async findMyReports(
     memberId: string,
-    memberRole: MemberRole,
     page: number,
     size: number,
     statusFilter?: HiveReportStatus,
-  ): Promise<PaginatedDto<HiveReportResponseDto>> {
+  ): Promise<PaginatedDto<HiveReportResponseDto, { points: number }>> {
     const take = Math.min(size);
     const skip = (page - 1) * take;
 
+    const member = await this.memberService.findByIdOrThrowException(memberId);
+
     const actionTypes =
-      memberRole === MemberRole.BEEKEEPER
+      member.role === MemberRole.BEEKEEPER
         ? [HiveActionType.HONEYBEE_PROOF, HiveActionType.RESERVE]
         : [HiveActionType.WASP_PROOF, HiveActionType.REPORT];
-
-    const member = await this.memberService.findByIdOrThrowException(memberId);
 
     const qbBase = this.hiveReportRepo
       .createQueryBuilder('report')
@@ -154,7 +153,7 @@ export class HiveReportService {
     if (statusFilter) {
       qbBase.andWhere('report.status = :status', { status: statusFilter });
     }
-    if (memberRole === MemberRole.BEEKEEPER) {
+    if (member.role === MemberRole.BEEKEEPER) {
       qbBase.andWhere('report.species = :species', {
         species: Species.HONEYBEE,
       });
@@ -190,11 +189,12 @@ export class HiveReportService {
           status: r.status,
           roadAddress: r.roadAddress,
           createdAt: r.createdAt,
-          ...(memberRole === MemberRole.BEEKEEPER &&
+          ...(member.role === MemberRole.BEEKEEPER &&
             r.status === HiveReportStatus.RESERVED &&
             row?.reserveActionId && { hiveActionId: row.reserveActionId }),
         };
       }),
+      meta: { points: member.points },
       page,
       size: take,
       total,
