@@ -41,6 +41,9 @@ import { tz } from './common/utils/date-util';
 
         OPENAI_API_KEY: Joi.string().required(),
         OPENAI_MODEL: Joi.string().required(),
+
+        PREEXISTING_BEEKEEPER_ID: Joi.string().required(),
+        PREEXISTING_REPORTER_ID: Joi.string().required(),
       }),
     }),
     DatabaseModule,
