@@ -10,7 +10,7 @@ import { createHash } from 'crypto';
 import { RedisService } from '../../common/redis/redis.service';
 import { BusinessException } from '../../common/filters/exception/business-exception';
 import { ErrorType } from '../../common/filters/exception/error-code.enum';
-import { SetMemberRoleDto } from './dto/set-member-role.dto';
+import { MemberRole } from '../member/constant/member-role.enum';
 
 @Injectable()
 export class AuthService {
@@ -139,7 +139,12 @@ export class AuthService {
     }
   }
 
-  async setMemberRole(memberId: string, memberRoleDto: SetMemberRoleDto) {
-    await this.memberService.setRole(memberId, memberRoleDto.role);
+  async setMemberRole(memberId: string, role: MemberRole) {
+    await this.memberService.setRole(memberId, role);
+    if (role === MemberRole.BEEKEEPER) {
+      await this.memberService.seedBeekeeperDefaults(memberId);
+    } else if (role === MemberRole.REPORTER) {
+      await this.memberService.seedReporterDefaults(memberId);
+    }
   }
 }

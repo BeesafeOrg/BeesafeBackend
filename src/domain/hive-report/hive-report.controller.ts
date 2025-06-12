@@ -83,7 +83,7 @@ export class HiveReportController {
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   @MemberRoles(MemberRole.REPORTER)
-  @ApiOperation({ summary: '벌집 신고서 사진 업로드' })
+  @ApiOperation({ summary: '벌집 신고서 최종 업로드' })
   @ApiResponse({ status: 2000, description: '성공적으로 업로드되었습니다.' })
   async createFinalReport(
     @Req() req: RequestMember,
@@ -172,18 +172,19 @@ export class HiveReportController {
   async proof(
     @Req() req: RequestMember,
     @Param('hiveReportId') hiveReportId: string,
-    @UploadedFile() file: Express.MulterS3.File,
+    // @UploadedFile() file: Express.MulterS3.File,
     @Body() proofDto: CreateProofDto,
   ): Promise<HiveProofResponseDto> {
-    if (!file) {
-      throw new BusinessException(ErrorType.INVALID_FILE_FORMAT);
-    }
+    // if (!file) {
+    //   throw new BusinessException(ErrorType.INVALID_FILE_FORMAT);
+    // }
 
     return await this.hiveReportService.proof(
       hiveReportId,
       req.user.memberId,
       proofDto,
-      file.location,
+      '',
+      // file.location,
     );
   }
 }
