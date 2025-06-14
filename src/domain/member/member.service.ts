@@ -569,4 +569,12 @@ export class MemberService {
         .increment({ id: memberId }, 'points', 200);
     });
   }
+
+  async updateFcmToken(memberId: string, fcmToken: string) {
+    const member = await this.findByIdOrThrowException(memberId);
+    if (member.fcmToken !== fcmToken) {
+      member.fcmToken = fcmToken;
+      await this.memberRepo.save(member);
+    }
+  }
 }

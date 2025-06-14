@@ -72,6 +72,10 @@ export class AuthService {
     }
   }
 
+  async updateFcmToken(memberId: string, fcmToken: string) {
+    await this.memberService.updateFcmToken(memberId, fcmToken);
+  }
+
   async issueTokens(member: Member) {
     const accessToken = await this.sign(
       { sub: member.id, role: member.role },
