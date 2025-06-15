@@ -596,4 +596,14 @@ export class MemberService {
       await this.memberRepo.save(member);
     }
   }
+
+  async findByInterestArea(districtCode: string) {
+    return await this.memberRepo.find({
+      where: {
+        role: MemberRole.BEEKEEPER,
+        interestAreas: { districtCode },
+      },
+      relations: ['interestAreas'],
+    });
+  }
 }

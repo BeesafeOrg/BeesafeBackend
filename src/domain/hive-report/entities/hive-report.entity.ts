@@ -4,6 +4,7 @@ import { HiveReportStatus } from '../constant/hive-report-status.enum';
 import { BaseEntity } from '../../../common/database/base.entity';
 import { Region } from '../../region/entities/region.entity';
 import { HiveAction } from './hive-action.entity';
+import { Notification } from '../../member/entities/notification.entity';
 
 @Entity('hive_report')
 export class HiveReport extends BaseEntity {
@@ -46,6 +47,9 @@ export class HiveReport extends BaseEntity {
   @ManyToOne(() => Region)
   @JoinColumn({ name: 'districtCode', referencedColumnName: 'districtCode' })
   region: Region;
+
+  @OneToMany(() => Notification, (n) => n.hiveReport)
+  notifications: Notification[];
 
   @Column({ length: 255 })
   imageUrl: string;

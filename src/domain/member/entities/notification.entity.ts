@@ -1,6 +1,8 @@
 import { Column, Entity, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/database/base.entity';
 import { Member } from './member.entity';
+import { NotificationType } from '../constant/notification-type.enum';
+import { HiveReport } from '../../hive-report/entities/hive-report.entity';
 
 @Entity('notification')
 export class Notification extends BaseEntity {
@@ -16,9 +18,18 @@ export class Notification extends BaseEntity {
   @Column({ type: 'json', nullable: true })
   data?: Record<string, any>;
 
+  @Column({ type: 'enum', enum: NotificationType })
+  type: NotificationType;
+
   @Column({ default: false })
   isRead: boolean;
 
-  @Column({ name: 'read_at', type: 'timestamp', nullable: true })
-  readAt: Date | null;
+  @ManyToOne(() => HiveReport, (r) => r.notifications, {
+    nullable: true,
+    onDelete: 'CASCADE',
+  })
+  hiveReport?: HiveReport;
+
+  @Column({ nullable: true })
+  roadAddress: string;
 }

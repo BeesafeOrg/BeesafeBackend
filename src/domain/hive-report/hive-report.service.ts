@@ -27,6 +27,7 @@ import { haversineDistance } from '../../common/utils/calc-distance-util';
 import { FcmService } from '../../common/fcm/fcm.service';
 import { Notification } from '../member/entities/notification.entity';
 import { NaverMapService } from '../../common/naver-map/naver-map.service';
+import { NotificationType } from '../member/constant/notification-type.enum';
 
 @Injectable()
 export class HiveReportService {
@@ -111,12 +112,16 @@ export class HiveReportService {
       dto.longitude,
     );
 
+    const beekeepers =
+      await this.memberService.findByInterestArea(districtCode);
+
     const { savedReport, region } = await this.dataSource.transaction(
       async (manager) => {
         const region =
           await this.regionService.findByDistrictCode(districtCode);
+
         Object.assign(report, {
-          region,
+          region: await this.regionService.findByDistrictCode(districtCode),
           species: dto.species,
           latitude: dto.latitude,
           longitude: dto.longitude,
@@ -126,17 +131,18 @@ export class HiveReportService {
         });
         await manager.save(report);
 
-        reporterAction.latitude = dto.latitude;
-        reporterAction.longitude = dto.longitude;
-        await manager.save(reporterAction);
-
-        const notification = manager.create(Notification, {
-          member: reporterAction.member,
-          title: '새로운 꿀벌집 신고!',
-          body: `${region.city} (${region.district})에 신고가 등록되었습니다.`,
-          data: { hiveReportId: report.id },
-        });
-        await manager.save(notification);
+        const notifRepo = manager.getRepository(Notification);
+        const notifications = beekeepers.map((bk) =>
+          notifRepo.create({
+            member: bk,
+            title: '새로운 꿀벌집 신고!',
+            body: `${region.city} (${region.district})에 새 신고가 등록되었습니다.`,
+            data: { hiveReportId: report.id },
+            type: NotificationType.HONEYBEE_REPORTED,
+            hiveReport: report,
+          }),
+        );
+        await notifRepo.save(notifications);
 
         return { savedReport: report, region };
       },
@@ -144,14 +150,14 @@ export class HiveReportService {
 
     try {
       await this.fcmService.sendToTopic(
-        `area-${savedReport.districtCode}`,
+        `area-${districtCode}`,
         '새로운 꿀벌집 신고!',
         `${region.city} (${region.district})에 신고가 등록되었습니다.`,
-        { hiveReportId: savedReport.id.toString() },
+        { hiveReportId: savedReport.id },
       );
     } catch (e) {
       console.warn(
-        `FCM 전송 실패 [area-${savedReport.districtCode}]:`,
+        `FCM 전송 실패 [area-${districtCode}]:`,
         (e as Error).message,
       );
     }
@@ -202,7 +208,7 @@ export class HiveReportService {
         'reserveAction.actionType = :reserveType AND reserveAction.memberId = :memberId',
         { reserveType: HiveActionType.RESERVE, memberId: member.id },
       )
-      .addSelect('reserveAction.id', 'reserveActionId') // ← 액션 ID만 추가로 가져옴
+      .addSelect('reserveAction.id', 'reserveActionId')
       .orderBy('report.createdAt', 'DESC')
       .skip(skip)
       .take(take);
@@ -282,9 +288,12 @@ export class HiveReportService {
 
       const notification = notiRepo.create({
         member: reporter,
-        title: '신고하신 꿀벌집이 예약되었어요',
-        body: '양봉업자가 출동 준비 중입니다!',
+        title: '꿀벌집 예약 접수됨!',
+        body: '신고한 꿀벌집이 예약되었습니다.',
         data: { hiveReportId: report.id },
+        type: NotificationType.HONEYBEE_RESERVED,
+        hiveReport: report,
+        roadAddress: report.roadAddress,
       });
       await notiRepo.save(notification);
 
@@ -300,8 +309,8 @@ export class HiveReportService {
       try {
         await this.fcmService.sendToDevice(
           reporter.fcmToken,
-          '신고하신 꿀벌집이 예약되었어요',
-          '양봉업자가 출동 준비 중입니다!',
+          '꿀벌집 예약 접수됨!',
+          '신고한 꿀벌집이 예약되었습니다.',
           { hiveReportId },
         );
       } catch (e) {
@@ -365,9 +374,12 @@ export class HiveReportService {
 
       const notification = notifRepo.create({
         member: reporter,
-        title: '신고하신 꿀벌집 예약이 취소되었습니다',
-        body: '양봉업체의 예약이 취소되었습니다. 다시 확인해 주세요.',
+        title: '꿀벌집 예약이 취소됨!',
+        body: '신고한 꿀벌집의 수거 예약이 취소되었습니다.',
         data: { hiveReportId: report.id },
+        type: NotificationType.HONEYBEE_RESERVE_CANCELED,
+        hiveReport: report,
+        roadAddress: report.roadAddress,
       });
       await notifRepo.save(notification);
 
@@ -383,8 +395,8 @@ export class HiveReportService {
       try {
         await this.fcmService.sendToDevice(
           reporter.fcmToken,
-          '신고하신 꿀벌집 예약이 취소되었습니다',
-          '양봉업체의 예약이 취소되었습니다. 다시 확인해 주세요.',
+          '꿀벌집 예약이 취소됨!',
+          '신고한 꿀벌집의 수거 예약이 취소되었습니다.',
           { hiveReportId },
         );
       } catch (e) {
@@ -462,150 +474,113 @@ export class HiveReportService {
   ): Promise<HiveProofResponseDto> {
     const { actionType, latitude, longitude } = proofDto;
 
-    const { responseDto, reporter, notification } =
-      await this.dataSource.transaction(async (manager) => {
-        const member = await manager
-          .getRepository(Member)
-          .findOneOrFail({ where: { id: memberId } });
+    return await this.dataSource.transaction(async (manager) => {
+      const member = await manager
+        .getRepository(Member)
+        .findOneOrFail({ where: { id: memberId } });
 
-        const report = await manager.getRepository(HiveReport).findOne({
-          where: { id: hiveReportId },
-          relations: ['actions', 'actions.member'],
-        });
-        if (!report) {
-          throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
-        }
-        const reportAction = report.actions.find(
-          (a) => a.actionType === HiveActionType.REPORT,
-        )!;
-        if (!reportAction) {
-          throw new BusinessException(ErrorType.INVALID_HIVE_REPORT_STATUS);
-        }
+      const report = await manager.getRepository(HiveReport).findOne({
+        where: { id: hiveReportId },
+        relations: ['actions', 'actions.member'],
+      });
+      if (!report) {
+        throw new BusinessException(ErrorType.HIVE_REPORT_NOT_FOUND);
+      }
+      const reportAction = report.actions.find(
+        (a) => a.actionType === HiveActionType.REPORT,
+      )!;
+      if (!reportAction) {
+        throw new BusinessException(ErrorType.INVALID_HIVE_REPORT_STATUS);
+      }
 
-        if (actionType === HiveActionType.HONEYBEE_PROOF) {
-          const reserveAct = await manager
-            .getRepository(HiveAction)
-            .createQueryBuilder('a')
-            .innerJoin('a.hiveReport', 'r', `r.id = :rid AND r.status = :st`, {
-              rid: hiveReportId,
-              st: HiveReportStatus.RESERVED,
-            })
-            .where('a.actionType = :t AND a.memberId = :mid', {
-              t: HiveActionType.RESERVE,
-              mid: memberId,
-            })
-            .getOne();
-          if (!reserveAct) {
-            throw new BusinessException(
-              ErrorType.INVALID_HIVE_REPORT_STATUS,
-              'Must be RESERVED by you to remove honeybee hive',
-            );
-          }
-
-          if (report.latitude == null || report.longitude == null) {
-            throw new BusinessException(
-              ErrorType.INVALID_HIVE_REPORT_LOCATION_DATA,
-            );
-          }
-          const MAX_DISTANCE_METERS = 30;
-          const distance = haversineDistance(
-            report.latitude,
-            report.longitude,
-            latitude,
-            longitude,
+      if (actionType === HiveActionType.HONEYBEE_PROOF) {
+        const reserveAct = await manager
+          .getRepository(HiveAction)
+          .createQueryBuilder('a')
+          .innerJoin('a.hiveReport', 'r', `r.id = :rid AND r.status = :st`, {
+            rid: hiveReportId,
+            st: HiveReportStatus.RESERVED,
+          })
+          .where('a.actionType = :t AND a.memberId = :mid', {
+            t: HiveActionType.RESERVE,
+            mid: memberId,
+          })
+          .getOne();
+        if (!reserveAct) {
+          throw new BusinessException(
+            ErrorType.INVALID_HIVE_REPORT_STATUS,
+            'Must be RESERVED by you to remove honeybee hive',
           );
-
-          if (distance > MAX_DISTANCE_METERS) {
-            throw new BusinessException(
-              ErrorType.INVALID_PROOF_LOCATION,
-              `The authentication location is too far from the reported location. ` +
-                `(Distance: ${distance.toFixed(1)}m, Allowed: ${MAX_DISTANCE_METERS}m)`,
-            );
-          }
-        } else if (actionType === HiveActionType.WASP_PROOF) {
-          if (
-            report.species === Species.WASP &&
-            reportAction.member.id === memberId
-          ) {
-            // pass
-          } else {
-            throw new BusinessException(
-              ErrorType.INVALID_HIVE_REPORT_STATUS,
-              'Only reporter can remove WASP hive without reservation',
-            );
-          }
         }
 
-        await manager
-          .getRepository(HiveReport)
-          .update(hiveReportId, { status: HiveReportStatus.REMOVED });
-
-        const actionRepo = manager.getRepository(HiveAction);
-        const proofAction = actionRepo.create({
-          hiveReport: { id: hiveReportId } as HiveReport,
-          member: { id: memberId } as Member,
-          actionType,
-          imageUrl,
+        if (report.latitude == null || report.longitude == null) {
+          throw new BusinessException(
+            ErrorType.INVALID_HIVE_REPORT_LOCATION_DATA,
+          );
+        }
+        const MAX_DISTANCE_METERS = 30;
+        const distance = haversineDistance(
+          report.latitude,
+          report.longitude,
           latitude,
           longitude,
-        });
-        const savedAction = await actionRepo.save(proofAction);
-
-        const rewardRepo = manager.getRepository(Reward);
-        const reward = rewardRepo.create({
-          points: 100,
-          action: savedAction,
-          member: member,
-        });
-        const savedReward = await rewardRepo.save(reward);
-        await manager
-          .getRepository(Member)
-          .increment({ id: memberId }, 'points', savedReward.points);
-
-        const reporter: Member = reportAction.member;
-        const notifRepo = manager.getRepository(Notification);
-        const notification = notifRepo.create({
-          member: reporter,
-          title:
-            actionType === HiveActionType.WASP_PROOF
-              ? '말벌집 신고가 제거되었습니다'
-              : '꿀벌집 신고가 제거되었습니다',
-          body: '제거 인증이 완료되었으니 확인해 주세요.',
-          data: { hiveReportId, proofActionId: savedAction.id.toString() },
-        });
-        await notifRepo.save(notification);
-
-        const responseDto: HiveProofResponseDto = {
-          hiveReportId,
-          actionId: savedAction.id,
-          rewardId: savedReward.id,
-          status: HiveReportStatus.REMOVED,
-          imageUrl,
-        };
-
-        return { responseDto, reporter, notification };
-      });
-
-    if (reporter.fcmToken) {
-      try {
-        await this.fcmService.sendToDevice(
-          reporter.fcmToken,
-          notification.title,
-          notification.body,
-          {
-            hiveReportId: responseDto.hiveReportId,
-            proofActionId: responseDto.actionId,
-          },
         );
-      } catch (e) {
-        console.warn(
-          `FCM 전송 실패 (제거 인증 알림) [${reporter.id}]:`,
-          (e as Error).message,
-        );
+
+        if (distance > MAX_DISTANCE_METERS) {
+          throw new BusinessException(
+            ErrorType.INVALID_PROOF_LOCATION,
+            `The authentication location is too far from the reported location. ` +
+              `(Distance: ${distance.toFixed(1)}m, Allowed: ${MAX_DISTANCE_METERS}m)`,
+          );
+        }
+      } else if (actionType === HiveActionType.WASP_PROOF) {
+        if (
+          report.species === Species.WASP &&
+          reportAction.member.id === memberId
+        ) {
+          // pass
+        } else {
+          throw new BusinessException(
+            ErrorType.INVALID_HIVE_REPORT_STATUS,
+            'Only reporter can remove WASP hive without reservation',
+          );
+        }
       }
-    }
 
-    return responseDto;
+      await manager
+        .getRepository(HiveReport)
+        .update(hiveReportId, { status: HiveReportStatus.REMOVED });
+
+      const actionRepo = manager.getRepository(HiveAction);
+      const proofAction = actionRepo.create({
+        hiveReport: { id: hiveReportId } as HiveReport,
+        member: { id: memberId } as Member,
+        actionType,
+        imageUrl,
+        latitude,
+        longitude,
+      });
+      const savedAction = await actionRepo.save(proofAction);
+
+      const rewardRepo = manager.getRepository(Reward);
+      const reward = rewardRepo.create({
+        points: 100,
+        action: savedAction,
+        member: member,
+      });
+      const savedReward = await rewardRepo.save(reward);
+      await manager
+        .getRepository(Member)
+        .increment({ id: memberId }, 'points', savedReward.points);
+
+      return {
+        hiveReportId,
+        actionId: savedAction.id,
+        rewardId: savedReward.id,
+        status: HiveReportStatus.REMOVED,
+        imageUrl,
+      };
+    });
   }
 
   async findReportsInBounds(
