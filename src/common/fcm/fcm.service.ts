@@ -2,6 +2,13 @@ import * as admin from 'firebase-admin';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+type FCMTopicResult = {
+  topic: string;
+  successCount: number;
+  failureCount: number;
+  errors: admin.FirebaseArrayIndexError[];
+};
+
 @Injectable()
 export class FcmService implements OnModuleInit {
   constructor(private configService: ConfigService) {}
@@ -26,31 +33,47 @@ export class FcmService implements OnModuleInit {
     }
   }
 
-  async sendToDevice(token: string, title: string, body: string) {
+  async sendToDevice(
+    token: string,
+    title: string,
+    body: string,
+    data?: Record<string, string>,
+  ) {
     return admin.messaging().send({
       token,
-      notification: {
-        title,
-        body,
-      },
+      notification: { title, body },
+      data,
     });
   }
 
-  async sendToTopic(topic: string, title: string, body: string) {
+  async sendToTopic(
+    topic: string,
+    title: string,
+    body: string,
+    data?: Record<string, string>,
+  ) {
     return admin.messaging().send({
       topic,
-      notification: {
-        title,
-        body,
-      },
+      notification: { title, body },
+      data,
     });
   }
 
-  async subscribeToTopic(tokens: string[], topic: string) {
-    return admin.messaging().subscribeToTopic(tokens, topic);
+  async subscribeToTopic(tokens: string[], topics: string[]) {
+    const results: FCMTopicResult[] = [];
+    for (const topic of topics) {
+      const res = await admin.messaging().subscribeToTopic(tokens, topic);
+      results.push({ topic, ...res });
+    }
+    return results;
   }
 
-  async unsubscribeFromTopic(tokens: string[], topic: string) {
-    return admin.messaging().unsubscribeFromTopic(tokens, topic);
+  async unsubscribeFromTopic(tokens: string[], topics: string[]) {
+    const results: FCMTopicResult[] = [];
+    for (const topic of topics) {
+      const res = await admin.messaging().unsubscribeFromTopic(tokens, topic);
+      results.push({ topic, ...res });
+    }
+    return results;
   }
 }

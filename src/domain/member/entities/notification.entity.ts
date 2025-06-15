@@ -1,26 +1,23 @@
-import { Column, Entity, Index, ManyToOne } from 'typeorm';
+import { Column, Entity, ManyToOne } from 'typeorm';
 import { BaseEntity } from '../../../common/database/base.entity';
 import { Member } from './member.entity';
-import { HiveReport } from '../../hive-report/entities/hive-report.entity';
-import { NotificationType } from '../constant/notification-type.enum';
 
 @Entity('notification')
-@Index(['member', 'hiveReport'], { unique: true })
 export class Notification extends BaseEntity {
   @ManyToOne(() => Member, (m) => m.notifications, { onDelete: 'CASCADE' })
   member: Member;
 
-  @ManyToOne(() => HiveReport, { onDelete: 'SET NULL' })
-  hiveReport: HiveReport | null;
-
-  @Column({ type: 'enum', enum: NotificationType })
-  type: NotificationType;
-
   @Column({ length: 100 })
   title: string;
 
-  @Column({ length: 255 })
-  message: string;
+  @Column({ type: 'text' })
+  body: string;
+
+  @Column({ type: 'json', nullable: true })
+  data?: Record<string, any>;
+
+  @Column({ default: false })
+  isRead: boolean;
 
   @Column({ name: 'read_at', type: 'timestamp', nullable: true })
   readAt: Date | null;
