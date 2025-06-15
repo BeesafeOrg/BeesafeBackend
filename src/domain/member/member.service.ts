@@ -22,6 +22,9 @@ import { HiveActionType } from '../hive-report/constant/hive-actions-type.enum';
 import { Species } from '../hive-report/constant/species.enum';
 import { HiveReportStatus } from '../hive-report/constant/hive-report-status.enum';
 import { FcmService } from '../../common/fcm/fcm.service';
+import { PaginatedDto } from '../../common/dto/paginated.dto';
+import { NotificationItemDto } from './dto/notification-response.dto';
+import { Notification } from './entities/notification.entity';
 
 @Injectable()
 export class MemberService {
@@ -31,6 +34,8 @@ export class MemberService {
     private readonly configService: ConfigService,
     @InjectRepository(Member)
     private readonly memberRepo: Repository<Member>,
+    @InjectRepository(Notification)
+    private readonly notiRepo: Repository<Notification>,
     private readonly fcmService: FcmService,
     private readonly dataSource: DataSource,
   ) {}
@@ -168,6 +173,37 @@ export class MemberService {
         new Map(districts.map((d) => [d.districtCode, d])).values(),
       ),
     }));
+  }
+
+  async getNotifications(
+    memberId: string,
+    page: number,
+    size: number,
+  ): Promise<PaginatedDto<NotificationItemDto>> {
+    const [entities, total] = await this.notiRepo.findAndCount({
+      where: { member: { id: memberId } },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * size,
+      take: size,
+      relations: ['hiveReport'],
+    });
+
+    const items: NotificationItemDto[] = entities.map((n) => ({
+      id: n.id,
+      hiveReportId: n.hiveReport!.id,
+      contents: n.body,
+      type: n.type,
+      roadAddress: n.roadAddress || '',
+      isRead: n.isRead,
+      sentAt: n.createdAt,
+    }));
+
+    return {
+      results: items,
+      page,
+      size,
+      total,
+    };
   }
 
   async seedReporterDefaults(memberId: string) {
@@ -595,5 +631,15 @@ export class MemberService {
       member.fcmToken = fcmToken;
       await this.memberRepo.save(member);
     }
+  }
+
+  async findByInterestArea(districtCode: string) {
+    return await this.memberRepo.find({
+      where: {
+        role: MemberRole.BEEKEEPER,
+        interestAreas: { districtCode },
+      },
+      relations: ['interestAreas'],
+    });
   }
 }

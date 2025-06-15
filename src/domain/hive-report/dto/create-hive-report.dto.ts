@@ -44,11 +44,4 @@ export class CreateHiveReportDto {
   })
   @IsString()
   roadAddress: string;
-
-  @ApiProperty({
-    description: '벌집 위치 (사용자 현위치 - 법정동코드)',
-    example: '11110',
-  })
-  @IsString()
-  districtCode: string;
 }

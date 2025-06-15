@@ -10,6 +10,7 @@ import { OpenaiModule } from '../../common/openai/openai.module';
 import { RegionModule } from '../region/region.module';
 import { HiveAction } from './entities/hive-action.entity';
 import { FcmService } from '../../common/fcm/fcm.service';
+import { NaverMapModule } from '../../common/naver-map/naver-map.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { FcmService } from '../../common/fcm/fcm.service';
     S3Module,
     OpenaiModule,
     RegionModule,
+    NaverMapModule,
   ],
   controllers: [HiveReportController],
   providers: [HiveReportService, FcmService],

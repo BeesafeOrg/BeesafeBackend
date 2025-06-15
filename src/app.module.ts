@@ -14,6 +14,8 @@ import { S3Module } from './common/s3/s3.module';
 import { OpenaiModule } from './common/openai/openai.module';
 import { tz } from './common/utils/date-util';
 import { FcmModule } from './common/fcm/fcm.module';
+import { HttpModule } from '@nestjs/axios';
+import { NaverMapModule } from './common/naver-map/naver-map.module';
 
 @Module({
   imports: [
@@ -49,6 +51,9 @@ import { FcmModule } from './common/fcm/fcm.module';
         FIREBASE_PROJECT_ID: Joi.string().required(),
         FIREBASE_CLIENT_EMAIL: Joi.string().required(),
         FIREBASE_PRIVATE_KEY: Joi.string().required(),
+
+        NAVER_CLIENT_ID: Joi.string().required(),
+        NAVER_CLIENT_SECRET: Joi.string().required(),
       }),
     }),
     DatabaseModule,
@@ -61,6 +66,7 @@ import { FcmModule } from './common/fcm/fcm.module';
     S3Module,
     OpenaiModule,
     FcmModule,
+    NaverMapModule,
   ],
   controllers: [AppController],
   providers: [],
