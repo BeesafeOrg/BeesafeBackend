@@ -34,8 +34,6 @@ export class HiveReportService {
   constructor(
     @InjectRepository(HiveReport)
     private readonly hiveReportRepo: Repository<HiveReport>,
-    @InjectRepository(HiveAction)
-    private readonly hiveActionRepo: Repository<HiveAction>,
     private readonly memberService: MemberService,
     private readonly openaiService: OpenaiService,
     private readonly regionService: RegionService,
@@ -136,10 +134,11 @@ export class HiveReportService {
           notifRepo.create({
             member: bk,
             title: '새로운 꿀벌집 신고!',
-            body: `${region.city} (${region.district})에 새 신고가 등록되었습니다.`,
+            body: `${region.city} ${region.district}에 새 신고가 등록되었습니다.`,
             data: { hiveReportId: report.id },
             type: NotificationType.HONEYBEE_REPORTED,
             hiveReport: report,
+            roadAddress: report.roadAddress,
           }),
         );
         await notifRepo.save(notifications);
@@ -152,7 +151,7 @@ export class HiveReportService {
       await this.fcmService.sendToTopic(
         `area-${districtCode}`,
         '새로운 꿀벌집 신고!',
-        `${region.city} (${region.district})에 신고가 등록되었습니다.`,
+        `${region.city} ${region.district}에 신고가 등록되었습니다.`,
         { hiveReportId: savedReport.id },
       );
     } catch (e) {

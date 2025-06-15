@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Put, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  ParseIntPipe,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { MemberService } from './member.service';
 import { JwtAccessGuard } from '../auth/guards/jwt-access.guard';
 import { MemberResponseDto } from './dto/member-response.dto';
@@ -7,8 +16,15 @@ import { MemberRole } from './constant/member-role.enum';
 import { MemberRoles } from '../auth/decorators/member-roles.decorator';
 import { UpdateInterestAreaDto } from './dto/update-interest-area.dto';
 import { RegionGroupedDto } from '../region/dto/region-grouped.dto';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { RequestMember } from '../auth/dto/request-member.dto';
+import { PaginatedDto } from '../../common/dto/paginated.dto';
+import { NotificationItemDto } from './dto/notification-response.dto';
 
 @Controller('members')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
@@ -52,5 +68,22 @@ export class MemberController {
     @Req() req: RequestMember,
   ): Promise<RegionGroupedDto[]> {
     return await this.memberService.getInterestAreas(req.user.memberId);
+  }
+
+  @Get('me/notifications')
+  @ApiOperation({ summary: '알림내역 조회' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'size', required: false, type: Number, example: 100 })
+  @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
+  async getNotifications(
+    @Req() req: RequestMember,
+    @Query('page', new ParseIntPipe({ optional: true })) page = 1,
+    @Query('size', new ParseIntPipe({ optional: true })) size = 100,
+  ): Promise<PaginatedDto<NotificationItemDto>> {
+    return await this.memberService.getNotifications(
+      req.user.memberId,
+      page,
+      size,
+    );
   }
 }
