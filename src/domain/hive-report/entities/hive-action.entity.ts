@@ -7,16 +7,6 @@ import { Reward } from './reward.entity';
 
 @Entity('hive_action')
 export class HiveAction extends BaseEntity {
-  @ManyToOne(() => HiveReport, (r) => r.actions, {
-    nullable: false,
-  })
-  @JoinColumn()
-  hiveReport: HiveReport;
-
-  @ManyToOne(() => Member, { eager: true })
-  @JoinColumn({ name: 'memberId' })
-  member: Member;
-
   @Column({ type: 'enum', enum: HiveActionType })
   actionType: HiveActionType;
 
@@ -31,4 +21,14 @@ export class HiveAction extends BaseEntity {
 
   @OneToOne(() => Reward, (rw) => rw.action, { cascade: true })
   reward?: Reward;
+
+  @ManyToOne(() => HiveReport, (r) => r.actions, {
+    nullable: false,
+  })
+  @JoinColumn()
+  hiveReport: HiveReport;
+
+  @ManyToOne(() => Member, (m) => m, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'memberId' })
+  member: Member;
 }

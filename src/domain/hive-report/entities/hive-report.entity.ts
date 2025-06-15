@@ -8,11 +8,6 @@ import { Notification } from '../../member/entities/notification.entity';
 
 @Entity('hive_report')
 export class HiveReport extends BaseEntity {
-  @OneToMany(() => HiveAction, (a) => a.hiveReport, {
-    cascade: true,
-  })
-  actions: HiveAction[];
-
   @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
   latitude: number;
 
@@ -44,13 +39,22 @@ export class HiveReport extends BaseEntity {
   @Column({ length: 5, nullable: true })
   districtCode: string;
 
+  @Column({ length: 255 })
+  imageUrl: string;
+
+  @OneToMany(() => HiveAction, (a) => a.hiveReport, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
+  actions: HiveAction[];
+
   @ManyToOne(() => Region)
   @JoinColumn({ name: 'districtCode', referencedColumnName: 'districtCode' })
   region: Region;
 
-  @OneToMany(() => Notification, (n) => n.hiveReport)
+  @OneToMany(() => Notification, (n) => n.hiveReport, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   notifications: Notification[];
-
-  @Column({ length: 255 })
-  imageUrl: string;
 }

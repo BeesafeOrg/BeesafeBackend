@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   ParseIntPipe,
   Put,
@@ -85,5 +86,12 @@ export class MemberController {
       page,
       size,
     );
+  }
+
+  @Delete('me')
+  @ApiOperation({ summary: '회원 탈퇴' })
+  @ApiResponse({ status: 2000, description: '성공적으로 탈퇴되었습니다.' })
+  async delete(@Req() req: RequestMember): Promise<void> {
+    await this.memberService.delete(req.user.memberId);
   }
 }
