@@ -25,12 +25,21 @@ export class Member extends BaseEntity {
   @Column({ type: 'decimal', default: 0 })
   points: number;
 
-  @OneToMany(() => Reward, (r) => r.member)
+  @OneToMany(() => Reward, (r) => r.member, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   rewards: Reward[];
 
-  @OneToMany(() => InterestArea, (ia) => ia.member)
+  @OneToMany(() => InterestArea, (ia) => ia.member, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   interestAreas: InterestArea[];
 
-  @OneToMany(() => Notification, (n) => n.member)
+  @OneToMany(() => Notification, (n) => n.member, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   notifications: Notification[];
 }

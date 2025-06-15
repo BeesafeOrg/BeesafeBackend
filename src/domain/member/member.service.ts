@@ -633,7 +633,7 @@ export class MemberService {
     }
   }
 
-  async findByInterestArea(districtCode: string) {
+  async findByInterestArea(districtCode: string): Promise<Member[]> {
     return await this.memberRepo.find({
       where: {
         role: MemberRole.BEEKEEPER,
@@ -641,5 +641,13 @@ export class MemberService {
       },
       relations: ['interestAreas'],
     });
+  }
+
+  async delete(memberId: string): Promise<void> {
+    const exists = await this.memberRepo.count({ where: { id: memberId } });
+    if (!exists) {
+      throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
+    }
+    await this.memberRepo.delete({ id: memberId });
   }
 }
