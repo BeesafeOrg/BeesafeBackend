@@ -10,6 +10,9 @@ export class Member extends BaseEntity {
   @Column({ type: 'enum', enum: MemberRole, nullable: true })
   role?: MemberRole;
 
+  @Column({ nullable: true })
+  fcmToken: string;
+
   @Column({ unique: true })
   email: string;
 

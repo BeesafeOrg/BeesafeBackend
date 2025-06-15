@@ -21,6 +21,7 @@ import { Reward } from '../hive-report/entities/reward.entity';
 import { HiveActionType } from '../hive-report/constant/hive-actions-type.enum';
 import { Species } from '../hive-report/constant/species.enum';
 import { HiveReportStatus } from '../hive-report/constant/hive-report-status.enum';
+import { FcmService } from '../../common/fcm/fcm.service';
 
 @Injectable()
 export class MemberService {
@@ -30,6 +31,7 @@ export class MemberService {
     private readonly configService: ConfigService,
     @InjectRepository(Member)
     private readonly memberRepo: Repository<Member>,
+    private readonly fcmService: FcmService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -81,6 +83,10 @@ export class MemberService {
       throw new BusinessException(ErrorType.INVALID_INTEREST_AREA_COUNT);
     }
 
+    let toAdd: string[] = [];
+    let toRemove: InterestArea[] = [];
+    let fcmToken: string | null = null;
+
     await this.dataSource.transaction(async (manager) => {
       const member = await manager.findOne(Member, {
         where: { id: memberId },
@@ -89,6 +95,8 @@ export class MemberService {
       if (!member) {
         throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
       }
+
+      fcmToken = member.fcmToken;
 
       const regions = await manager.findByIds(Region, areaDtos);
       if (regions.length !== areaDtos.length) {
@@ -100,10 +108,10 @@ export class MemberService {
       );
       const incoming = new Set(areaDtos.map((dto) => dto.districtCode));
 
-      const toRemove = member.interestAreas.filter(
+      toRemove = member.interestAreas.filter(
         (ia) => !incoming.has(ia.districtCode),
       );
-      const toAdd = [...incoming].filter((code) => !current.has(code));
+      toAdd = [...incoming].filter((code) => !current.has(code));
 
       if (toRemove.length) {
         await manager.remove(InterestArea, toRemove);
@@ -115,6 +123,17 @@ export class MemberService {
         await manager.save(newEntities);
       }
     });
+
+    if (fcmToken) {
+      if (toRemove.length) {
+        const codes = toRemove.map((ia) => `area-${ia.districtCode}`);
+        await this.fcmService.unsubscribeFromTopic([fcmToken], codes);
+      }
+      if (toAdd.length) {
+        const codes = toAdd.map((code) => `area-${code}`);
+        await this.fcmService.subscribeToTopic([fcmToken], codes);
+      }
+    }
   }
 
   async getInterestAreas(memberId: string): Promise<RegionGroupedDto[]> {
@@ -568,5 +587,13 @@ export class MemberService {
         .getRepository(Member)
         .increment({ id: memberId }, 'points', 200);
     });
+  }
+
+  async updateFcmToken(memberId: string, fcmToken: string) {
+    const member = await this.findByIdOrThrowException(memberId);
+    if (member.fcmToken !== fcmToken) {
+      member.fcmToken = fcmToken;
+      await this.memberRepo.save(member);
+    }
   }
 }

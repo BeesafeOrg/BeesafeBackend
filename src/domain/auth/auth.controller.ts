@@ -23,6 +23,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { RequestMember } from './dto/request-member.dto';
+import { UpdateFcmTokenDto } from './dto/update-fcm-token.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -67,6 +68,18 @@ export class AuthController {
     @Body() memberRoleDto: SetMemberRoleDto,
   ): Promise<void> {
     await this.authService.setMemberRole(req.user.memberId, memberRoleDto.role);
+  }
+
+  @Post('fcm-token')
+  @UseGuards(JwtAccessGuard)
+  @ApiBearerAuth('jwt-access')
+  @ApiOperation({ summary: 'fcm 토큰 업데이트' })
+  @ApiResponse({ status: 2000, description: '성공적으로 업데이트 되었습니다.' })
+  async updateFcmToken(
+    @Req() req: RequestMember,
+    @Body() dto: UpdateFcmTokenDto,
+  ): Promise<void> {
+    await this.authService.updateFcmToken(req.user.memberId, dto.fcmToken);
   }
 
   // 테스트용

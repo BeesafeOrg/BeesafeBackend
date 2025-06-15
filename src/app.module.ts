@@ -13,6 +13,7 @@ import { RegionSeedService } from './domain/region/constant/region-seed.service'
 import { S3Module } from './common/s3/s3.module';
 import { OpenaiModule } from './common/openai/openai.module';
 import { tz } from './common/utils/date-util';
+import { FcmModule } from './common/fcm/fcm.module';
 
 @Module({
   imports: [
@@ -44,6 +45,10 @@ import { tz } from './common/utils/date-util';
 
         PREEXISTING_BEEKEEPER_ID: Joi.string().required(),
         PREEXISTING_REPORTER_ID: Joi.string().required(),
+
+        FIREBASE_PROJECT_ID: Joi.string().required(),
+        FIREBASE_CLIENT_EMAIL: Joi.string().required(),
+        FIREBASE_PRIVATE_KEY: Joi.string().required(),
       }),
     }),
     DatabaseModule,
@@ -55,6 +60,7 @@ import { tz } from './common/utils/date-util';
     ScheduleModule.forRoot(),
     S3Module,
     OpenaiModule,
+    FcmModule,
   ],
   controllers: [AppController],
   providers: [],
