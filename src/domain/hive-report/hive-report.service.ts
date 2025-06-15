@@ -26,6 +26,7 @@ import { HiveProofResponseDto } from './dto/hive-proof-response.dto';
 import { haversineDistance } from '../../common/utils/calc-distance-util';
 import { FcmService } from '../../common/fcm/fcm.service';
 import { Notification } from '../member/entities/notification.entity';
+import { NaverMapService } from '../../common/naver-map/naver-map.service';
 
 @Injectable()
 export class HiveReportService {
@@ -39,6 +40,7 @@ export class HiveReportService {
     private readonly regionService: RegionService,
     private readonly fcmService: FcmService,
     private readonly dataSource: DataSource,
+    private readonly naverMapService: NaverMapService,
   ) {}
 
   async verifyWithImage(
@@ -104,46 +106,52 @@ export class HiveReportService {
       throw new BusinessException(ErrorType.ALREADY_UPLOADED_HIVE_REPORT);
     }
 
-    const savedReport = await this.dataSource.transaction(async (manager) => {
-      const region = await this.regionService.findByDistrictCode(
-        dto.districtCode,
-      );
-      Object.assign(report, {
-        region,
-        species: dto.species,
-        latitude: dto.latitude,
-        longitude: dto.longitude,
-        roadAddress: dto.roadAddress,
-        districtCode: dto.districtCode,
-        status: HiveReportStatus.REPORTED,
-      });
-      await manager.save(report);
+    const { districtCode } = await this.naverMapService.reverseGeocode(
+      dto.latitude,
+      dto.longitude,
+    );
 
-      reporterAction.latitude = dto.latitude;
-      reporterAction.longitude = dto.longitude;
-      await manager.save(reporterAction);
+    const { savedReport, region } = await this.dataSource.transaction(
+      async (manager) => {
+        const region =
+          await this.regionService.findByDistrictCode(districtCode);
+        Object.assign(report, {
+          region,
+          species: dto.species,
+          latitude: dto.latitude,
+          longitude: dto.longitude,
+          roadAddress: dto.roadAddress,
+          districtCode,
+          status: HiveReportStatus.REPORTED,
+        });
+        await manager.save(report);
 
-      const notification = manager.create(Notification, {
-        member: reporterAction.member,
-        title: '새로운 꿀벌집 신고!',
-        body: `${region?.city ?? '관심지역'} ${region?.district ?? ''}에 신고가 등록되었습니다.`,
-        data: { hiveReportId: report.id },
-      });
-      await manager.save(notification);
+        reporterAction.latitude = dto.latitude;
+        reporterAction.longitude = dto.longitude;
+        await manager.save(reporterAction);
 
-      return report;
-    });
+        const notification = manager.create(Notification, {
+          member: reporterAction.member,
+          title: '새로운 꿀벌집 신고!',
+          body: `${region.city} (${region.district})에 신고가 등록되었습니다.`,
+          data: { hiveReportId: report.id },
+        });
+        await manager.save(notification);
+
+        return { savedReport: report, region };
+      },
+    );
 
     try {
       await this.fcmService.sendToTopic(
-        `area-${dto.districtCode}`,
+        `area-${savedReport.districtCode}`,
         '새로운 꿀벌집 신고!',
-        `${savedReport.region?.city ?? '관심지역'} ${savedReport.region?.district ?? ''}에 신고가 등록되었습니다.`,
+        `${region.city} (${region.district})에 신고가 등록되었습니다.`,
         { hiveReportId: savedReport.id.toString() },
       );
     } catch (e) {
       console.warn(
-        `FCM 전송 실패 [area-${dto.districtCode}]:`,
+        `FCM 전송 실패 [area-${savedReport.districtCode}]:`,
         (e as Error).message,
       );
     }
@@ -454,8 +462,8 @@ export class HiveReportService {
   ): Promise<HiveProofResponseDto> {
     const { actionType, latitude, longitude } = proofDto;
 
-    const { responseDto, reporter, notification } = await this.dataSource.transaction(
-      async (manager) => {
+    const { responseDto, reporter, notification } =
+      await this.dataSource.transaction(async (manager) => {
         const member = await manager
           .getRepository(Member)
           .findOneOrFail({ where: { id: memberId } });
@@ -576,8 +584,7 @@ export class HiveReportService {
         };
 
         return { responseDto, reporter, notification };
-      },
-    );
+      });
 
     if (reporter.fcmToken) {
       try {

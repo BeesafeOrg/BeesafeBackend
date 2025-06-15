@@ -161,4 +161,16 @@ export const ERROR_META: Record<ErrorType, ErrorMeta> = {
     message: 'Openai vision schema mismatch',
     status: HttpStatus.INTERNAL_SERVER_ERROR,
   },
+
+  /* naver map */
+  [ErrorType.NAVER_MAP_API_ERROR]: {
+    code: 56001,
+    message: 'Naver map api service unavailable',
+    status: HttpStatus.BAD_GATEWAY,
+  },
+  [ErrorType.GEOCODE_NOT_FOUND]: {
+    code: 56002,
+    message: 'Geocode not found',
+    status: HttpStatus.NOT_FOUND,
+  },
 };
