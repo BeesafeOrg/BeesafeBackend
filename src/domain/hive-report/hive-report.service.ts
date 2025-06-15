@@ -276,6 +276,7 @@ export class HiveReportService {
         member: reporter,
         title: '신고하신 꿀벌집이 예약되었어요',
         body: '양봉업자가 출동 준비 중입니다!',
+        data: { hiveReportId: report.id },
       });
       await notiRepo.save(notification);
 
@@ -358,6 +359,7 @@ export class HiveReportService {
         member: reporter,
         title: '신고하신 꿀벌집 예약이 취소되었습니다',
         body: '양봉업체의 예약이 취소되었습니다. 다시 확인해 주세요.',
+        data: { hiveReportId: report.id },
       });
       await notifRepo.save(notification);
 
