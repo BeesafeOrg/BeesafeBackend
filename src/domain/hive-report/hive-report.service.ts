@@ -473,12 +473,18 @@ export class HiveReportService {
   ): Promise<HiveProofResponseDto> {
     const { actionType, latitude, longitude } = proofDto;
 
-    return await this.dataSource.transaction(async (manager) => {
-      const member = await manager
-        .getRepository(Member)
-        .findOneOrFail({ where: { id: memberId } });
+    const savedReport = await this.dataSource.transaction(async (manager) => {
+      const memberRepo = manager.getRepository(Member);
+      const reportRepo = manager.getRepository(HiveReport);
+      const actionRepo = manager.getRepository(HiveAction);
+      const rewardRepo = manager.getRepository(Reward);
+      const notiRepo = manager.getRepository(Notification);
 
-      const report = await manager.getRepository(HiveReport).findOne({
+      const member = await memberRepo.findOneOrFail({
+        where: { id: memberId },
+      });
+
+      const report = await reportRepo.findOne({
         where: { id: hiveReportId },
         relations: ['actions', 'actions.member'],
       });
@@ -487,14 +493,14 @@ export class HiveReportService {
       }
       const reportAction = report.actions.find(
         (a) => a.actionType === HiveActionType.REPORT,
-      )!;
-      if (!reportAction) {
+      );
+      const reporter = reportAction?.member;
+      if (!reportAction || !reporter) {
         throw new BusinessException(ErrorType.INVALID_HIVE_REPORT_STATUS);
       }
 
       if (actionType === HiveActionType.HONEYBEE_PROOF) {
-        const reserveAct = await manager
-          .getRepository(HiveAction)
+        const reserveAct = await actionRepo
           .createQueryBuilder('a')
           .innerJoin('a.hiveReport', 'r', `r.id = :rid AND r.status = :st`, {
             rid: hiveReportId,
@@ -532,6 +538,17 @@ export class HiveReportService {
               `(Distance: ${distance.toFixed(1)}m, Allowed: ${MAX_DISTANCE_METERS}m)`,
           );
         }
+
+        const notification = notiRepo.create({
+          member: reporter,
+          title: '꿀벌집 제거 완료!',
+          body: '꿀벌집이 성공적으로 제거되었습니다.',
+          data: { hiveReportId },
+          type: NotificationType.HONEYBEE_REMOVED,
+          hiveReport: { id: hiveReportId } as HiveReport,
+          roadAddress: report.roadAddress,
+        });
+        await notiRepo.save(notification);
       } else if (actionType === HiveActionType.WASP_PROOF) {
         if (
           report.species === Species.WASP &&
@@ -546,11 +563,10 @@ export class HiveReportService {
         }
       }
 
-      await manager
-        .getRepository(HiveReport)
-        .update(hiveReportId, { status: HiveReportStatus.REMOVED });
+      await reportRepo.update(hiveReportId, {
+        status: HiveReportStatus.REMOVED,
+      });
 
-      const actionRepo = manager.getRepository(HiveAction);
       const proofAction = actionRepo.create({
         hiveReport: { id: hiveReportId } as HiveReport,
         member: { id: memberId } as Member,
@@ -561,25 +577,46 @@ export class HiveReportService {
       });
       const savedAction = await actionRepo.save(proofAction);
 
-      const rewardRepo = manager.getRepository(Reward);
       const reward = rewardRepo.create({
         points: 100,
         action: savedAction,
-        member: member,
+        member: reporter,
       });
       const savedReward = await rewardRepo.save(reward);
-      await manager
-        .getRepository(Member)
-        .increment({ id: memberId }, 'points', savedReward.points);
+      await memberRepo.increment(
+        { id: memberId },
+        'points',
+        savedReward.points,
+      );
 
       return {
         hiveReportId,
         actionId: savedAction.id,
         rewardId: savedReward.id,
         status: HiveReportStatus.REMOVED,
-        imageUrl,
+        reporter,
       };
     });
+
+    const { reporter } = savedReport as any; // 위에 추가된 값
+    if (reporter.fcmToken) {
+      try {
+        await this.fcmService.sendToDevice(
+          reporter.fcmToken,
+          '꿀벌집 제거 완료!',
+          '예약하신 꿀벌집이 제거되었습니다.',
+          { hiveReportId },
+        );
+      } catch (e) {
+        console.warn(
+          `FCM 전송 실패 (제거 완료 알림) [${reporter.id}]:`,
+          (e as Error).message,
+        );
+      }
+    }
+
+    const { actionId, rewardId, status } = savedReport as any;
+    return { hiveReportId, actionId, rewardId, status, imageUrl };
   }
 
   async findReportsInBounds(
