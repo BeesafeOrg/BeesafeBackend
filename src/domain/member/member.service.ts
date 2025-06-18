@@ -25,6 +25,7 @@ import { FcmService } from '../../common/fcm/fcm.service';
 import { PaginatedDto } from '../../common/dto/paginated.dto';
 import { NotificationItemDto } from './dto/notification-response.dto';
 import { Notification } from './entities/notification.entity';
+import { NotificationType } from './constant/notification-type.enum';
 
 @Injectable()
 export class MemberService {
@@ -206,6 +207,32 @@ export class MemberService {
     };
   }
 
+  async updateFcmToken(memberId: string, fcmToken: string) {
+    const member = await this.findByIdOrThrowException(memberId);
+    if (member.fcmToken !== fcmToken) {
+      member.fcmToken = fcmToken;
+      await this.memberRepo.save(member);
+    }
+  }
+
+  async findByInterestArea(districtCode: string): Promise<Member[]> {
+    return await this.memberRepo.find({
+      where: {
+        role: MemberRole.BEEKEEPER,
+        interestAreas: { districtCode },
+      },
+      relations: ['interestAreas'],
+    });
+  }
+
+  async delete(memberId: string): Promise<void> {
+    const exists = await this.memberRepo.count({ where: { id: memberId } });
+    if (!exists) {
+      throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
+    }
+    await this.memberRepo.delete({ id: memberId });
+  }
+
   async seedReporterDefaults(memberId: string) {
     const PREEXISTING_BEEKEEPER_ID = this.configService.get<string>(
       'PREEXISTING_BEEKEEPER_ID',
@@ -223,6 +250,7 @@ export class MemberService {
       const reportRepo = manager.getRepository(HiveReport);
       const actionRepo = manager.getRepository(HiveAction);
       const rewardRepo = manager.getRepository(Reward);
+      const notiRepo = manager.getRepository(Notification);
 
       const member = await manager
         .getRepository(Member)
@@ -290,6 +318,17 @@ export class MemberService {
           actionType: HiveActionType.RESERVE,
         }),
       );
+      await notiRepo.save(
+        notiRepo.create({
+          member,
+          title: '꿀벌집 예약 접수됨!',
+          body: '신고한 꿀벌집이 예약되었습니다.',
+          data: { hiveReportId: hb2.id },
+          type: NotificationType.HONEYBEE_RESERVED,
+          hiveReport: hb2,
+          roadAddress: hb2.roadAddress,
+        }),
+      );
 
       //  c) REMOVED
       const hb3 = await reportRepo.save(
@@ -321,6 +360,17 @@ export class MemberService {
           actionType: HiveActionType.RESERVE,
         }),
       );
+      await notiRepo.save(
+        notiRepo.create({
+          member,
+          title: '꿀벌집 예약 접수됨!',
+          body: '신고한 꿀벌집이 예약되었습니다.',
+          data: { hiveReportId: hb3.id },
+          type: NotificationType.HONEYBEE_RESERVED,
+          hiveReport: hb3,
+          roadAddress: hb3.roadAddress,
+        }),
+      );
       const rmHb3 = await actionRepo.save(
         actionRepo.create({
           hiveReport: hb3,
@@ -329,6 +379,17 @@ export class MemberService {
           longitude: 127.074012,
           actionType: HiveActionType.HONEYBEE_PROOF,
           imageUrl: HONEYBEE_REMOVED_IMG,
+        }),
+      );
+      await notiRepo.save(
+        notiRepo.create({
+          member,
+          title: '꿀벌집 제거 완료!',
+          body: '꿀벌집이 안전하게 제거되었습니다.',
+          data: { hiveReportId: hb3.id },
+          type: NotificationType.HONEYBEE_REMOVED,
+          hiveReport: hb3,
+          roadAddress: hb3.roadAddress,
         }),
       );
       await rewardRepo.save(
@@ -422,6 +483,7 @@ export class MemberService {
       const reportRepo = manager.getRepository(HiveReport);
       const actionRepo = manager.getRepository(HiveAction);
       const rewardRepo = manager.getRepository(Reward);
+      const notiRepo = manager.getRepository(Notification);
 
       const member = await manager
         .getRepository(Member)
@@ -457,6 +519,17 @@ export class MemberService {
           imageUrl: HONEYBEE_IMG,
         }),
       );
+      await notiRepo.save(
+        notiRepo.create({
+          member,
+          title: '새로운 꿀벌집 신고!',
+          body: `${region.city} ${region.district}에 새 신고가 등록되었습니다.`,
+          data: { hiveReportId: hb1.id },
+          type: NotificationType.HONEYBEE_REPORTED,
+          hiveReport: hb1,
+          roadAddress: hb1.roadAddress,
+        }),
+      );
       await actionRepo.save(
         actionRepo.create({
           hiveReport: hb1,
@@ -485,6 +558,17 @@ export class MemberService {
           longitude: 127.071912,
           actionType: HiveActionType.REPORT,
           imageUrl: HONEYBEE_IMG,
+        }),
+      );
+      await notiRepo.save(
+        notiRepo.create({
+          member,
+          title: '새로운 꿀벌집 신고!',
+          body: `${region.city} ${region.district}에 새 신고가 등록되었습니다.`,
+          data: { hiveReportId: hb2.id },
+          type: NotificationType.HONEYBEE_REPORTED,
+          hiveReport: hb2,
+          roadAddress: hb2.roadAddress,
         }),
       );
       await actionRepo.save(
@@ -516,6 +600,17 @@ export class MemberService {
           imageUrl: HONEYBEE_IMG,
         }),
       );
+      await notiRepo.save(
+        notiRepo.create({
+          member,
+          title: '새로운 꿀벌집 신고!',
+          body: `${region.city} ${region.district}에 새 신고가 등록되었습니다.`,
+          data: { hiveReportId: hb3.id },
+          type: NotificationType.HONEYBEE_REPORTED,
+          hiveReport: hb3,
+          roadAddress: hb3.roadAddress,
+        }),
+      );
       await actionRepo.save(
         actionRepo.create({
           hiveReport: hb3,
@@ -545,6 +640,17 @@ export class MemberService {
           longitude: 127.074012,
           actionType: HiveActionType.REPORT,
           imageUrl: HONEYBEE_IMG,
+        }),
+      );
+      await notiRepo.save(
+        notiRepo.create({
+          member,
+          title: '새로운 꿀벌집 신고!',
+          body: `${region.city} ${region.district}에 새 신고가 등록되었습니다.`,
+          data: { hiveReportId: hb4.id },
+          type: NotificationType.HONEYBEE_REPORTED,
+          hiveReport: hb4,
+          roadAddress: hb4.roadAddress,
         }),
       );
       await actionRepo.save(
@@ -594,6 +700,17 @@ export class MemberService {
           imageUrl: HONEYBEE_IMG,
         }),
       );
+      await notiRepo.save(
+        notiRepo.create({
+          member,
+          title: '새로운 꿀벌집 신고!',
+          body: `${region.city} ${region.district}에 새 신고가 등록되었습니다.`,
+          data: { hiveReportId: hb5.id },
+          type: NotificationType.HONEYBEE_REPORTED,
+          hiveReport: hb5,
+          roadAddress: hb5.roadAddress,
+        }),
+      );
       await actionRepo.save(
         actionRepo.create({
           hiveReport: hb5,
@@ -623,31 +740,5 @@ export class MemberService {
         .getRepository(Member)
         .increment({ id: memberId }, 'points', 200);
     });
-  }
-
-  async updateFcmToken(memberId: string, fcmToken: string) {
-    const member = await this.findByIdOrThrowException(memberId);
-    if (member.fcmToken !== fcmToken) {
-      member.fcmToken = fcmToken;
-      await this.memberRepo.save(member);
-    }
-  }
-
-  async findByInterestArea(districtCode: string): Promise<Member[]> {
-    return await this.memberRepo.find({
-      where: {
-        role: MemberRole.BEEKEEPER,
-        interestAreas: { districtCode },
-      },
-      relations: ['interestAreas'],
-    });
-  }
-
-  async delete(memberId: string): Promise<void> {
-    const exists = await this.memberRepo.count({ where: { id: memberId } });
-    if (!exists) {
-      throw new BusinessException(ErrorType.MEMBER_NOT_FOUND);
-    }
-    await this.memberRepo.delete({ id: memberId });
   }
 }

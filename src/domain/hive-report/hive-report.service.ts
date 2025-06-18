@@ -542,7 +542,7 @@ export class HiveReportService {
         const notification = notiRepo.create({
           member: reporter,
           title: '꿀벌집 제거 완료!',
-          body: '꿀벌집이 성공적으로 제거되었습니다.',
+          body: '꿀벌집이 안전하게 제거되었습니다.',
           data: { hiveReportId },
           type: NotificationType.HONEYBEE_REMOVED,
           hiveReport: { id: hiveReportId } as HiveReport,
