@@ -17,12 +17,7 @@ import { MemberRole } from './constant/member-role.enum';
 import { MemberRoles } from '../auth/decorators/member-roles.decorator';
 import { UpdateInterestAreaDto } from './dto/update-interest-area.dto';
 import { RegionGroupedDto } from '../region/dto/region-grouped.dto';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiQuery,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { RequestMember } from '../auth/dto/request-member.dto';
 import { PaginatedDto } from '../../common/dto/paginated.dto';
 import { NotificationItemDto } from './dto/notification-response.dto';

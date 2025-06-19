@@ -5,7 +5,6 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { map, Observable } from 'rxjs';
-import { ApiProperty } from '@nestjs/swagger';
 import { CommonResponseDto } from '../dto/common-response.dto';
 
 @Injectable()

@@ -20,7 +20,6 @@ import {
   ApiOperation,
   ApiParam,
   ApiQuery,
-  ApiResponse,
 } from '@nestjs/swagger';
 import { MemberRoles } from '../auth/decorators/member-roles.decorator';
 import { MemberRole } from '../member/constant/member-role.enum';
