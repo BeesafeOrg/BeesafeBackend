@@ -26,14 +26,14 @@ export class CreateHiveReportDto {
 
   @ApiProperty({
     description: '벌집 위치 (사용자 현위치 - 위도)',
-    example: 37.123456,
+    example: 37.539182,
   })
   @IsLatitude()
   latitude: number;
 
   @ApiProperty({
     description: '벌집 위치 (사용자 현위치 - 경도)',
-    example: 127.654321,
+    example: 37.539182,
   })
   @IsLongitude()
   longitude: number;
