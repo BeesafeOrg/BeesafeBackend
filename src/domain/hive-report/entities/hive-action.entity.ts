@@ -1,4 +1,11 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToOne } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToOne,
+} from 'typeorm';
 import { BaseEntity } from '../../../common/database/base.entity';
 import { HiveReport } from './hive-report.entity';
 import { Member } from '../../member/entities/member.entity';
@@ -6,6 +13,7 @@ import { HiveActionType } from '../constant/hive-actions-type.enum';
 import { Reward } from './reward.entity';
 
 @Entity('hive_action')
+@Index('UQ_report_once', ['hiveReport', 'actionType'], { unique: true })
 export class HiveAction extends BaseEntity {
   @Column({ type: 'enum', enum: HiveActionType })
   actionType: HiveActionType;
