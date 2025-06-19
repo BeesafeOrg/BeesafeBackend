@@ -17,15 +17,14 @@ import { MemberRole } from './constant/member-role.enum';
 import { MemberRoles } from '../auth/decorators/member-roles.decorator';
 import { UpdateInterestAreaDto } from './dto/update-interest-area.dto';
 import { RegionGroupedDto } from '../region/dto/region-grouped.dto';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiQuery,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { RequestMember } from '../auth/dto/request-member.dto';
 import { PaginatedDto } from '../../common/dto/paginated.dto';
 import { NotificationItemDto } from './dto/notification-response.dto';
+import { ApiOkResponseCommon } from '../../common/decorator/api-ok-response';
+import { ApiOkArrayResponseCommon } from '../../common/decorator/api-ok-array-response';
+import { ApiOkVoidResponseCommon } from '../../common/decorator/api-ok-void-response';
+import { ApiOkResponsePaginated } from '../../common/decorator/api-ok-pagination-response';
 
 @Controller('members')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
@@ -35,7 +34,7 @@ export class MemberController {
 
   @Get('me')
   @ApiOperation({ summary: '회원 정보 조회' })
-  @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
+  @ApiOkResponseCommon(MemberResponseDto)
   async getMyInfo(@Req() req: RequestMember): Promise<MemberResponseDto> {
     const member = await this.memberService.findByIdOrThrowException(
       req.user.memberId,
@@ -53,7 +52,7 @@ export class MemberController {
   @Put('me/interest-areas')
   @MemberRoles(MemberRole.BEEKEEPER)
   @ApiOperation({ summary: '양봉업자 관심지역 설정' })
-  @ApiResponse({ status: 2000, description: '성공적으로 설정되었습니다.' })
+  @ApiOkVoidResponseCommon()
   async setInterestAreas(
     @Req() req: RequestMember,
     @Body() dto: UpdateInterestAreaDto,
@@ -64,7 +63,7 @@ export class MemberController {
   @Get('me/interest-areas')
   @MemberRoles(MemberRole.BEEKEEPER)
   @ApiOperation({ summary: '양봉업자 관심지역 조회' })
-  @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
+  @ApiOkArrayResponseCommon(RegionGroupedDto)
   async getInterestAreas(
     @Req() req: RequestMember,
   ): Promise<RegionGroupedDto[]> {
@@ -75,7 +74,7 @@ export class MemberController {
   @ApiOperation({ summary: '알림내역 조회' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'size', required: false, type: Number, example: 100 })
-  @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
+  @ApiOkResponsePaginated(NotificationItemDto)
   async getNotifications(
     @Req() req: RequestMember,
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,
@@ -90,7 +89,7 @@ export class MemberController {
 
   @Delete('me')
   @ApiOperation({ summary: '회원 탈퇴' })
-  @ApiResponse({ status: 2000, description: '성공적으로 탈퇴되었습니다.' })
+  @ApiOkVoidResponseCommon()
   async delete(@Req() req: RequestMember): Promise<void> {
     await this.memberService.delete(req.user.memberId);
   }

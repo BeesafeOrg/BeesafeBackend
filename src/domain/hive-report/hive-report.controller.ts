@@ -20,7 +20,6 @@ import {
   ApiOperation,
   ApiParam,
   ApiQuery,
-  ApiResponse,
 } from '@nestjs/swagger';
 import { MemberRoles } from '../auth/decorators/member-roles.decorator';
 import { MemberRole } from '../member/constant/member-role.enum';
@@ -37,6 +36,12 @@ import { HiveReportDetailResponseDto } from './dto/hive-report-detail-response.d
 import { CreateProofDto } from './dto/create-proof.dto';
 import { HiveProofResponseDto } from './dto/hive-proof-response.dto';
 import { HiveReportPinDto } from './dto/hive-report-pin.dto';
+import { ApiOkResponseCommon } from '../../common/decorator/api-ok-response';
+import { ApiOkArrayResponseCommon } from '../../common/decorator/api-ok-array-response';
+import { AddressResponseDto } from './dto/address-response.dto';
+import { MemberRewordDto } from './dto/member-reword.dto';
+import { ApiOkResponsePaginated } from '../../common/decorator/api-ok-pagination-response';
+import { ApiOkVoidResponseCommon } from '../../common/decorator/api-ok-void-response';
 
 @Controller('hive-reports')
 @UseGuards(JwtAccessGuard, MemberRoleGuard)
@@ -46,7 +51,7 @@ export class HiveReportController {
 
   @Get()
   @ApiOperation({ summary: '지도 표시 용 벌집 신고서 조회' })
-  @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
+  @ApiOkArrayResponseCommon(HiveReportPinDto)
   async getReports(
     @Query('minLat') minLat?: string,
     @Query('maxLat') maxLat?: string,
@@ -65,7 +70,7 @@ export class HiveReportController {
   @UseInterceptors(FileInterceptor('file'))
   @MemberRoles(MemberRole.REPORTER)
   @ApiOperation({ summary: '벌집 신고서 사진 업로드' })
-  @ApiResponse({ status: 2000, description: '성공적으로 업로드되었습니다.' })
+  @ApiOkResponseCommon(OpenAiResponseOfHiveReportImageDto)
   async uploadFile(
     @Req() req: RequestMember,
     @UploadedFile() file: Express.MulterS3.File,
@@ -84,11 +89,11 @@ export class HiveReportController {
   @UseInterceptors(FileInterceptor('file'))
   @MemberRoles(MemberRole.REPORTER)
   @ApiOperation({ summary: '벌집 신고서 최종 업로드' })
-  @ApiResponse({ status: 2000, description: '성공적으로 업로드되었습니다.' })
+  @ApiOkResponseCommon(AddressResponseDto)
   async createFinalReport(
     @Req() req: RequestMember,
     @Body() createDto: CreateHiveReportDto,
-  ): Promise<{ address: string }> {
+  ): Promise<AddressResponseDto> {
     return await this.hiveReportService.finalizeReport(
       req.user.memberId,
       createDto,
@@ -104,13 +109,13 @@ export class HiveReportController {
     required: false,
     enum: HiveReportStatus,
   })
-  @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
+  @ApiOkResponsePaginated(HiveReportResponseDto, MemberRewordDto)
   async getMyReports(
     @Req() req: RequestMember,
     @Query('page', new ParseIntPipe({ optional: true })) page = 1,
     @Query('size', new ParseIntPipe({ optional: true })) size = 100,
     @Query('statusFilter') statusFilter?: HiveReportStatus,
-  ): Promise<PaginatedDto<HiveReportResponseDto, { points: number }>> {
+  ): Promise<PaginatedDto<HiveReportResponseDto, MemberRewordDto>> {
     return await this.hiveReportService.findMyReports(
       req.user.memberId,
       page,
@@ -123,7 +128,7 @@ export class HiveReportController {
   @MemberRoles(MemberRole.BEEKEEPER)
   @ApiOperation({ summary: '꿀벌집 제거 예약' })
   @ApiParam({ name: 'hiveReportId', description: '꿀벌집신고서 ID' })
-  @ApiResponse({ status: 2000, description: '성공적으로 예약되었습니다.' })
+  @ApiOkVoidResponseCommon()
   async reserve(
     @Req() req: RequestMember,
     @Param('hiveReportId') hiveReportId: string,
@@ -136,10 +141,7 @@ export class HiveReportController {
   @ApiOperation({ summary: '꿀벌집 제거 예약 취소' })
   @ApiParam({ name: 'hiveReportId', description: '꿀벌집신고서 ID' })
   @ApiParam({ name: 'hiveActionId', description: '꿀벌집신고서 예약 액션 ID' })
-  @ApiResponse({
-    status: 2000,
-    description: '성공적으로 예약이 취소되었습니다.',
-  })
+  @ApiOkVoidResponseCommon()
   async cancelReservation(
     @Req() req: RequestMember,
     @Param('hiveReportId') hiveReportId: string,
@@ -155,7 +157,7 @@ export class HiveReportController {
   @Get(':hiveReportId')
   @ApiOperation({ summary: '벌집 신고서 상세 조회' })
   @ApiParam({ name: 'hiveReportId', description: '꿀벌집신고서 ID' })
-  @ApiResponse({ status: 2000, description: '성공적으로 조회되었습니다.' })
+  @ApiOkResponseCommon(HiveReportDetailResponseDto)
   async getReportDetails(
     @Req() req: RequestMember,
     @Param('hiveReportId') hiveReportId: string,
@@ -170,7 +172,7 @@ export class HiveReportController {
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: '벌집 신고서 제거 인증 사진 업로드' })
   @ApiParam({ name: 'hiveReportId', description: '꿀벌집신고서 ID' })
-  @ApiResponse({ status: 2000, description: '성공적으로 업로드되었습니다.' })
+  @ApiOkResponseCommon(HiveProofResponseDto)
   async proof(
     @Req() req: RequestMember,
     @Param('hiveReportId') hiveReportId: string,

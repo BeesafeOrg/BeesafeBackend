@@ -1,6 +1,5 @@
-import { PickType } from '@nestjs/mapped-types';
 import { DistrictCodeDto } from '../../member/dto/update-interest-area.dto';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PickType } from '@nestjs/swagger';
 
 export class DistrictDto extends PickType(DistrictCodeDto, [
   'districtCode',
@@ -22,7 +21,13 @@ export class RegionGroupedDto {
   @ApiProperty({
     description: '지역 정보 리스트',
     type: [DistrictCodeDto],
-    example: [{ districtCode: '11110', district: '종로구' }, { districtCode: '11140', district: '중구' }],
+    example: [
+      { districtCode: '11110', district: '종로구' },
+      {
+        districtCode: '11140',
+        district: '중구',
+      },
+    ],
   })
   districts: DistrictDto[];
 }

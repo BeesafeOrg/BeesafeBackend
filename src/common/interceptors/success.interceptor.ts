@@ -5,12 +5,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { map, Observable } from 'rxjs';
-
-export interface CommonResponseDto<T = unknown> {
-  code: number;
-  message: string;
-  data: T;
-}
+import { CommonResponseDto } from '../dto/common-response.dto';
 
 @Injectable()
 export class SuccessInterceptor<T>

@@ -28,6 +28,7 @@ import { FcmService } from '../../common/fcm/fcm.service';
 import { Notification } from '../member/entities/notification.entity';
 import { NaverMapService } from '../../common/naver-map/naver-map.service';
 import { NotificationType } from '../member/constant/notification-type.enum';
+import { MemberRewordDto } from './dto/member-reword.dto';
 
 @Injectable()
 export class HiveReportService {
@@ -169,7 +170,7 @@ export class HiveReportService {
     page: number,
     size: number,
     statusFilter?: HiveReportStatus,
-  ): Promise<PaginatedDto<HiveReportResponseDto, { points: number }>> {
+  ): Promise<PaginatedDto<HiveReportResponseDto, MemberRewordDto>> {
     const take = Math.min(size);
     const skip = (page - 1) * take;
 

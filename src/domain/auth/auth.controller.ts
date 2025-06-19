@@ -1,8 +1,6 @@
 import {
   Body,
   Controller,
-  Get,
-  Param,
   Patch,
   Post,
   Query,
@@ -14,16 +12,11 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { JwtAccessGuard } from './guards/jwt-access.guard';
 import { JwtResponseDto } from './dto/jwt-response.dto';
 import { SetMemberRoleDto } from './dto/set-member-role.dto';
-import { MemberRole } from '../member/constant/member-role.enum';
-import { Member } from '../member/entities/member.entity';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequestMember } from './dto/request-member.dto';
 import { UpdateFcmTokenDto } from './dto/update-fcm-token.dto';
+import { ApiOkResponseCommon } from '../../common/decorator/api-ok-response';
+import { ApiOkVoidResponseCommon } from '../../common/decorator/api-ok-void-response';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -32,7 +25,7 @@ export class AuthController {
 
   @Post('kakao/login')
   @ApiOperation({ summary: '카카오에서 사용자 정보 조회 및 저장 후 토큰 발급' })
-  @ApiResponse({ status: 2000, description: '성공적으로 발급되었습니다.' })
+  @ApiOkResponseCommon(JwtResponseDto)
   async kakaoCallback(@Query('token') token: string): Promise<JwtResponseDto> {
     const profile = await this.authService.getProfile(token);
     const member = await this.authService.upsertMember(profile);
@@ -43,7 +36,7 @@ export class AuthController {
   @Post('refresh')
   @UseGuards(JwtRefreshGuard)
   @ApiOperation({ summary: '액세스 및 리프레시 토큰 재발급' })
-  @ApiResponse({ status: 2000, description: '성공적으로 발급되었습니다.' })
+  @ApiOkResponseCommon(JwtResponseDto)
   async refresh(@Req() req: RequestMember): Promise<JwtResponseDto> {
     const { memberId, jti } = req.user;
     return await this.authService.rotate(memberId, jti);
@@ -53,7 +46,7 @@ export class AuthController {
   @UseGuards(JwtAccessGuard)
   @ApiBearerAuth('jwt-access')
   @ApiOperation({ summary: '로그아웃' })
-  @ApiResponse({ status: 2000, description: '성공적으로 로그아웃 되었습니다.' })
+  @ApiOkVoidResponseCommon()
   async logout(@Req() req: RequestMember): Promise<void> {
     await this.authService.revokeAll(req.user.memberId);
   }
@@ -62,7 +55,7 @@ export class AuthController {
   @UseGuards(JwtAccessGuard)
   @ApiBearerAuth('jwt-access')
   @ApiOperation({ summary: '회원 역할 설정' })
-  @ApiResponse({ status: 2000, description: '성공적으로 설정되었습니다.' })
+  @ApiOkVoidResponseCommon()
   async setMemberRole(
     @Req() req: RequestMember,
     @Body() memberRoleDto: SetMemberRoleDto,
@@ -74,31 +67,11 @@ export class AuthController {
   @UseGuards(JwtAccessGuard)
   @ApiBearerAuth('jwt-access')
   @ApiOperation({ summary: 'fcm 토큰 업데이트' })
-  @ApiResponse({ status: 2000, description: '성공적으로 업데이트 되었습니다.' })
+  @ApiOkVoidResponseCommon()
   async updateFcmToken(
     @Req() req: RequestMember,
     @Body() dto: UpdateFcmTokenDto,
   ): Promise<void> {
     await this.authService.updateFcmToken(req.user.memberId, dto.fcmToken);
-  }
-
-  // 테스트용
-  @Get('/mylogin/beekeeper/:memberId')
-  @ApiOperation({ summary: '양봉업자 토큰 생성 (테스트용)' })
-  async myLogin1(@Param('memberId') memberId: string): Promise<JwtResponseDto> {
-    return await this.authService.issueTokens({
-      id: memberId,
-      role: MemberRole.BEEKEEPER,
-    } as Member);
-  }
-
-  // 테스트용
-  @Get('/mylogin/reporter/:memberId')
-  @ApiOperation({ summary: '신고자 토큰 생성 (테스트용)' })
-  async myLogin2(@Param('memberId') memberId: string): Promise<JwtResponseDto> {
-    return await this.authService.issueTokens({
-      id: memberId,
-      role: MemberRole.REPORTER,
-    } as Member);
   }
 }
