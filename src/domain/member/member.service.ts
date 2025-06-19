@@ -194,7 +194,7 @@ export class MemberService {
       hiveReportId: n.hiveReport!.id,
       contents: n.body,
       type: n.type,
-      roadAddress: n.roadAddress || '',
+      roadAddress: n.address || '',
       isRead: n.isRead,
       sentAt: n.createdAt,
     }));
@@ -267,10 +267,9 @@ export class MemberService {
       //  a) REPORTED
       const hb1 = await reportRepo.save(
         reportRepo.create({
-          latitude: 37.541642,
-          longitude: 127.071808,
-          roadAddress:
-            '서울특별시 광진구 능동로 120-1 (화양동, 건국대학교병원)',
+          latitude: 37.541235,
+          longitude: 127.0720557,
+          address: '서울특별시 광진구 능동로 120-1 (화양동, 건국대학교병원)',
           region,
           species: Species.HONEYBEE,
           status: HiveReportStatus.REPORTED,
@@ -281,8 +280,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: hb1,
           member,
-          latitude: 37.541642,
-          longitude: 127.071808,
+          latitude: 37.541235,
+          longitude: 127.0720557,
           actionType: HiveActionType.REPORT,
           imageUrl: HONEYBEE_IMG,
         }),
@@ -291,9 +290,9 @@ export class MemberService {
       //  b) RESERVED
       const hb2 = await reportRepo.save(
         reportRepo.create({
-          latitude: 37.541861,
-          longitude: 127.071912,
-          roadAddress:
+          latitude: 37.538338,
+          longitude: 127.07464,
+          address:
             '서울특별시 광진구 아차산로 36길 5 (화양동, 건국대학교동문회관)',
           region,
           species: Species.HONEYBEE,
@@ -305,8 +304,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: hb2,
           member,
-          latitude: 37.541861,
-          longitude: 127.071912,
+          latitude: 37.538338,
+          longitude: 127.07464,
           actionType: HiveActionType.REPORT,
           imageUrl: HONEYBEE_IMG,
         }),
@@ -326,17 +325,16 @@ export class MemberService {
           data: { hiveReportId: hb2.id },
           type: NotificationType.HONEYBEE_RESERVED,
           hiveReport: hb2,
-          roadAddress: hb2.roadAddress,
+          address: hb2.address,
         }),
       );
 
       //  c) REMOVED
       const hb3 = await reportRepo.save(
         reportRepo.create({
-          latitude: 37.548993,
-          longitude: 127.074012,
-          roadAddress:
-            '서울특별시 광진구 능동로 380 (중곡동, 조광신경정신과의원)',
+          latitude: 37.563092,
+          longitude: 127.082969,
+          address: '서울특별시 광진구 능동로 380 (중곡동, 조광신경정신과의원)',
           region,
           species: Species.HONEYBEE,
           status: HiveReportStatus.REMOVED,
@@ -347,8 +345,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: hb3,
           member,
-          latitude: 37.548993,
-          longitude: 127.074012,
+          latitude: 37.563092,
+          longitude: 127.082969,
           actionType: HiveActionType.REPORT,
           imageUrl: HONEYBEE_IMG,
         }),
@@ -368,15 +366,15 @@ export class MemberService {
           data: { hiveReportId: hb3.id },
           type: NotificationType.HONEYBEE_RESERVED,
           hiveReport: hb3,
-          roadAddress: hb3.roadAddress,
+          address: hb3.address,
         }),
       );
       const rmHb3 = await actionRepo.save(
         actionRepo.create({
           hiveReport: hb3,
           member: beekeeper,
-          latitude: 37.548993,
-          longitude: 127.074012,
+          latitude: 37.563092,
+          longitude: 127.082969,
           actionType: HiveActionType.HONEYBEE_PROOF,
           imageUrl: HONEYBEE_REMOVED_IMG,
         }),
@@ -389,7 +387,7 @@ export class MemberService {
           data: { hiveReportId: hb3.id },
           type: NotificationType.HONEYBEE_REMOVED,
           hiveReport: hb3,
-          roadAddress: hb3.roadAddress,
+          address: hb3.address,
         }),
       );
       await rewardRepo.save(
@@ -404,9 +402,9 @@ export class MemberService {
       //  a) REPORTED
       const wb1 = await reportRepo.save(
         reportRepo.create({
-          latitude: 37.541609,
-          longitude: 127.07178,
-          roadAddress: '서울특별시 광진구 능동로 120 (화양동, 법학관)',
+          latitude: 37.539182,
+          longitude: 127.074711,
+          address: '서울특별시 광진구 능동로 120 (건국대학교, 법학관)',
           region,
           species: Species.WASP,
           status: HiveReportStatus.REPORTED,
@@ -417,8 +415,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: wb1,
           member,
-          latitude: 37.541609,
-          longitude: 127.07178,
+          latitude: 37.539182,
+          longitude: 127.074711,
           actionType: HiveActionType.REPORT,
           imageUrl: WASP_IMG,
         }),
@@ -426,10 +424,9 @@ export class MemberService {
       //  b) REMOVED
       const wb2 = await reportRepo.save(
         reportRepo.create({
-          latitude: 37.542467,
-          longitude: 127.071214,
-          roadAddress:
-            '서울특별시 광진구 능동로 216 (능동 18번지, 서울상상나라)',
+          latitude: 37.552011,
+          longitude: 127.07877,
+          address: '서울특별시 광진구 능동로 238 (서울시민안전체험관)',
           region,
           species: Species.WASP,
           status: HiveReportStatus.REMOVED,
@@ -440,8 +437,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: wb2,
           member,
-          latitude: 37.542467,
-          longitude: 127.071214,
+          latitude: 37.552011,
+          longitude: 127.07877,
           actionType: HiveActionType.REPORT,
           imageUrl: WASP_IMG,
         }),
@@ -450,8 +447,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: wb2,
           member,
-          latitude: 37.542467,
-          longitude: 127.071214,
+          latitude: 37.552011,
+          longitude: 127.07877,
           actionType: HiveActionType.WASP_PROOF,
           imageUrl: WASP_REMOVED_IMG,
         }),
@@ -499,10 +496,9 @@ export class MemberService {
       // 1) 예약된 꿀벌집 신고서
       const hb1 = await reportRepo.save(
         reportRepo.create({
-          latitude: 37.541642,
-          longitude: 127.071808,
-          roadAddress:
-            '서울특별시 광진구 능동로 120-1 (화양동, 건국대학교병원)',
+          latitude: 37.541235,
+          longitude: 127.0720557,
+          address: '서울특별시 광진구 능동로 120-1 (화양동, 건국대학교병원)',
           region,
           species: Species.HONEYBEE,
           status: HiveReportStatus.RESERVED,
@@ -513,8 +509,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: hb1,
           member: reporter,
-          latitude: 37.541642,
-          longitude: 127.071808,
+          latitude: 37.541235,
+          longitude: 127.0720557,
           actionType: HiveActionType.REPORT,
           imageUrl: HONEYBEE_IMG,
         }),
@@ -527,7 +523,7 @@ export class MemberService {
           data: { hiveReportId: hb1.id },
           type: NotificationType.HONEYBEE_REPORTED,
           hiveReport: hb1,
-          roadAddress: hb1.roadAddress,
+          address: hb1.address,
         }),
       );
       await actionRepo.save(
@@ -540,9 +536,9 @@ export class MemberService {
 
       const hb2 = await reportRepo.save(
         reportRepo.create({
-          latitude: 37.541861,
-          longitude: 127.071912,
-          roadAddress:
+          latitude: 37.538338,
+          longitude: 127.07464,
+          address:
             '서울특별시 광진구 아차산로 36길 5 (화양동, 건국대학교동문회관)',
           region,
           species: Species.HONEYBEE,
@@ -554,8 +550,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: hb2,
           member: reporter,
-          latitude: 37.541861,
-          longitude: 127.071912,
+          latitude: 37.538338,
+          longitude: 127.07464,
           actionType: HiveActionType.REPORT,
           imageUrl: HONEYBEE_IMG,
         }),
@@ -568,7 +564,7 @@ export class MemberService {
           data: { hiveReportId: hb2.id },
           type: NotificationType.HONEYBEE_REPORTED,
           hiveReport: hb2,
-          roadAddress: hb2.roadAddress,
+          address: hb2.address,
         }),
       );
       await actionRepo.save(
@@ -581,9 +577,9 @@ export class MemberService {
 
       const hb3 = await reportRepo.save(
         reportRepo.create({
-          latitude: 37.541609,
-          longitude: 127.07178,
-          roadAddress: '서울특별시 광진구 능동로 120 (화양동, 법학관)',
+          latitude: 37.563092,
+          longitude: 127.082969,
+          address: '서울특별시 광진구 능동로 380 (중곡동, 조광신경정신과의원)',
           region,
           species: Species.HONEYBEE,
           status: HiveReportStatus.RESERVED,
@@ -594,8 +590,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: hb3,
           member: reporter,
-          latitude: 37.541609,
-          longitude: 127.07178,
+          latitude: 37.563092,
+          longitude: 127.082969,
           actionType: HiveActionType.REPORT,
           imageUrl: HONEYBEE_IMG,
         }),
@@ -608,7 +604,7 @@ export class MemberService {
           data: { hiveReportId: hb3.id },
           type: NotificationType.HONEYBEE_REPORTED,
           hiveReport: hb3,
-          roadAddress: hb3.roadAddress,
+          address: hb3.address,
         }),
       );
       await actionRepo.save(
@@ -622,10 +618,9 @@ export class MemberService {
       // 2) 제거된 꿀벌집 신고서
       const hb4 = await reportRepo.save(
         reportRepo.create({
-          latitude: 37.548993,
-          longitude: 127.074012,
-          roadAddress:
-            '서울특별시 광진구 능동로 380 (중곡동, 조광신경정신과의원)',
+          latitude: 37.539182,
+          longitude: 127.074711,
+          address: '서울특별시 광진구 능동로 120 (건국대학교, 법학관)',
           region,
           species: Species.HONEYBEE,
           status: HiveReportStatus.REMOVED,
@@ -636,8 +631,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: hb4,
           member: reporter,
-          latitude: 37.548993,
-          longitude: 127.074012,
+          latitude: 37.539182,
+          longitude: 127.074711,
           actionType: HiveActionType.REPORT,
           imageUrl: HONEYBEE_IMG,
         }),
@@ -650,7 +645,7 @@ export class MemberService {
           data: { hiveReportId: hb4.id },
           type: NotificationType.HONEYBEE_REPORTED,
           hiveReport: hb4,
-          roadAddress: hb4.roadAddress,
+          address: hb4.address,
         }),
       );
       await actionRepo.save(
@@ -664,8 +659,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: hb4,
           member,
-          latitude: 37.548993,
-          longitude: 127.074012,
+          latitude: 37.539182,
+          longitude: 127.074711,
           actionType: HiveActionType.HONEYBEE_PROOF,
           imageUrl: HONEYBEE_REMOVED_IMG,
         }),
@@ -680,10 +675,9 @@ export class MemberService {
 
       const hb5 = await reportRepo.save(
         reportRepo.create({
-          latitude: 37.542467,
-          longitude: 127.071214,
-          roadAddress:
-            '서울특별시 광진구 능동로 216 (능동 18번지, 서울상상나라)',
+          latitude: 37.552011,
+          longitude: 127.07877,
+          address: '서울특별시 광진구 능동로 238 (서울시민안전체험관)',
           region,
           species: Species.HONEYBEE,
           status: HiveReportStatus.REMOVED,
@@ -694,8 +688,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: hb5,
           member: reporter,
-          latitude: 37.542467,
-          longitude: 127.071214,
+          latitude: 37.552011,
+          longitude: 127.07877,
           actionType: HiveActionType.REPORT,
           imageUrl: HONEYBEE_IMG,
         }),
@@ -708,7 +702,7 @@ export class MemberService {
           data: { hiveReportId: hb5.id },
           type: NotificationType.HONEYBEE_REPORTED,
           hiveReport: hb5,
-          roadAddress: hb5.roadAddress,
+          address: hb5.address,
         }),
       );
       await actionRepo.save(
@@ -722,8 +716,8 @@ export class MemberService {
         actionRepo.create({
           hiveReport: hb5,
           member,
-          latitude: 37.542467,
-          longitude: 127.071214,
+          latitude: 37.552011,
+          longitude: 127.07877,
           actionType: HiveActionType.HONEYBEE_PROOF,
           imageUrl: HONEYBEE_REMOVED_IMG,
         }),

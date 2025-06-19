@@ -105,10 +105,11 @@ export class HiveReportService {
       throw new BusinessException(ErrorType.ALREADY_UPLOADED_HIVE_REPORT);
     }
 
-    const { districtCode } = await this.naverMapService.reverseGeocode(
-      dto.latitude,
-      dto.longitude,
-    );
+    const { districtCode, address } =
+      await this.naverMapService.reverseGeocodeWithAddress(
+        dto.latitude,
+        dto.longitude,
+      );
 
     const beekeepers =
       await this.memberService.findByInterestArea(districtCode);
@@ -123,7 +124,7 @@ export class HiveReportService {
           species: dto.species,
           latitude: dto.latitude,
           longitude: dto.longitude,
-          roadAddress: dto.roadAddress,
+          address,
           districtCode,
           status: HiveReportStatus.REPORTED,
         });
@@ -138,7 +139,7 @@ export class HiveReportService {
             data: { hiveReportId: report.id },
             type: NotificationType.HONEYBEE_REPORTED,
             hiveReport: report,
-            roadAddress: report.roadAddress,
+            address: report.address,
           }),
         );
         await notifRepo.save(notifications);
@@ -227,7 +228,7 @@ export class HiveReportService {
           hiveReportId: r.id,
           species: r.species,
           status: r.status,
-          roadAddress: r.roadAddress,
+          address: r.address,
           createdAt: r.createdAt,
           ...(member.role === MemberRole.BEEKEEPER &&
             r.status === HiveReportStatus.RESERVED &&
@@ -292,7 +293,7 @@ export class HiveReportService {
         data: { hiveReportId: report.id },
         type: NotificationType.HONEYBEE_RESERVED,
         hiveReport: report,
-        roadAddress: report.roadAddress,
+        address: report.address,
       });
       await notiRepo.save(notification);
 
@@ -378,7 +379,7 @@ export class HiveReportService {
         data: { hiveReportId: report.id },
         type: NotificationType.HONEYBEE_RESERVE_CANCELED,
         hiveReport: report,
-        roadAddress: report.roadAddress,
+        address: report.address,
       });
       await notifRepo.save(notification);
 
@@ -459,7 +460,7 @@ export class HiveReportService {
       species: report.species,
       latitude: report.latitude,
       longitude: report.longitude,
-      roadAddress: report.roadAddress,
+      address: report.address,
       status: report.status,
       createdAt: report.createdAt,
     };
@@ -546,7 +547,7 @@ export class HiveReportService {
           data: { hiveReportId },
           type: NotificationType.HONEYBEE_REMOVED,
           hiveReport: { id: hiveReportId } as HiveReport,
-          roadAddress: report.roadAddress,
+          address: report.address,
         });
         await notiRepo.save(notification);
       } else if (actionType === HiveActionType.WASP_PROOF) {

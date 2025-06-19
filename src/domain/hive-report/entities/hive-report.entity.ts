@@ -34,7 +34,7 @@ export class HiveReport extends BaseEntity {
   status: HiveReportStatus;
 
   @Column({ nullable: true })
-  roadAddress: string;
+  address: string;
 
   @Column({ length: 5, nullable: true })
   districtCode: string;

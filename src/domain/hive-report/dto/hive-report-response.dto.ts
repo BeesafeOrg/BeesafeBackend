@@ -6,6 +6,6 @@ export class HiveReportResponseDto {
   hiveActionId?: string;
   species: Species;
   status: HiveReportStatus;
-  roadAddress: string;
+  address: string;
   createdAt: Date;
 }

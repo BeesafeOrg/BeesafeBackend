@@ -5,26 +5,28 @@ import { firstValueFrom } from 'rxjs';
 import { BusinessException } from '../filters/exception/business-exception';
 import { ErrorType } from '../filters/exception/error-code.enum';
 
-interface ReverseGeocodeResponse {
-  results: Array<{
+type Result = {
+  name: string;
+  code: { id: string };
+  region: {
+    area1: { name: string };
+    area2: { name: string };
+    area3?: { name: string };
+  };
+  land?: {
     name: string;
-    code: {
-      id: string;
-    };
-    region: {
-      area0: { name: string };
-      area1: { name: string };
-      area2: { name: string; code: string }; // 법정동
-      area3: { name: string };
-    };
-    land: {
-      name: string;
-      number1: string;
-      number2: string;
-      addition0?: { value: string }; // 번지정보
-    };
-    road: { name: string };
-  }>;
+    number1?: string;
+    number2?: string;
+    addition0?: { value: string };
+  };
+};
+
+interface ReverseGeocodeResp {
+  results: Result[];
+}
+
+interface ReverseGeocodeResp {
+  results: Result[];
 }
 
 @Injectable()
@@ -35,55 +37,91 @@ export class NaverMapService {
     'https://maps.apigw.ntruss.com/map-reversegeocode/v2/gc';
 
   constructor(
-    private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
+    private readonly http: HttpService,
+    cfg: ConfigService,
   ) {
-    this.clientId = this.configService.get('NAVER_CLIENT_ID')!;
-    this.clientSecret = this.configService.get('NAVER_CLIENT_SECRET')!;
+    this.clientId = cfg.get('NAVER_CLIENT_ID')!;
+    this.clientSecret = cfg.get('NAVER_CLIENT_SECRET')!;
   }
 
-  async reverseGeocode(
+  async reverseGeocodeWithAddress(
     lat: number,
     lng: number,
-  ): Promise<{
-    districtCode: string;
-  }> {
-    const coords = `${lng},${lat}`;
-    const orders = ['admcode', 'roadaddr'].join(',');
+  ): Promise<{ districtCode: string; address: string }> {
+    const coords = `${lng},${lat}`; // "경도,위도" 주의
+    const orders = ['legalcode', 'roadaddr', 'addr'].join(',');
     const url = `${this.baseUrl}?coords=${coords}&orders=${orders}&output=json`;
 
-    const headers = {
-      'X-NCP-APIGW-API-KEY-ID': this.clientId,
-      'X-NCP-APIGW-API-KEY': this.clientSecret,
-    };
-
-    let resp: ReverseGeocodeResponse;
+    let data: ReverseGeocodeResp;
     try {
-      const { data } = await firstValueFrom(
-        this.httpService.get<ReverseGeocodeResponse>(url, { headers }),
+      const { data: d } = await firstValueFrom(
+        this.http.get<ReverseGeocodeResp>(url, {
+          headers: this.getAuthHeaders(),
+        }),
       );
-      resp = data;
+      data = d;
     } catch (e) {
       throw new BusinessException(
         ErrorType.NAVER_MAP_API_ERROR,
-        `Naver Reverse Geocode API error: ${
-          (e as any).response?.data?.message || e.message
-        }`,
+        `ReverseGeocode API error: ${(e as any).message}`,
       );
     }
 
-    if (!resp.results?.length) {
+    if (!data.results?.length) {
       throw new BusinessException(ErrorType.GEOCODE_NOT_FOUND);
     }
 
-    const adm = resp.results.find((r) => r.name === 'admcode');
-    if (!adm) {
+    const legal = data.results.find((r) => r.name === 'legalcode');
+    if (!legal)
       throw new BusinessException(
         ErrorType.GEOCODE_NOT_FOUND,
-        'admcode not found',
+        'legalcode not found (available naver map api)',
+      );
+    const districtCode = legal.code.id.slice(0, 5); // 11215 (광진구)
+
+    const roadRow = data.results.find((r) => r.name === 'roadaddr');
+    const lotRow = data.results.find((r) => r.name === 'addr');
+
+    let address: string;
+    if (roadRow && roadRow.land?.name && roadRow.land.number1) {
+      address = this.composeRoadAddr(roadRow, lotRow);
+    } else if (lotRow) {
+      address = this.composeLotAddr(lotRow);
+    } else {
+      throw new BusinessException(
+        ErrorType.GEOCODE_NOT_FOUND,
+        'roadAddr and jibunAddr all not found (available naver map api)',
       );
     }
-    const fullCode = adm.code.id as string; // ex. "1121573000"
-    return { districtCode: fullCode.substring(0, 5) }; // "11215"
+
+    return { districtCode, address };
+  }
+
+  private composeRoadAddr(road: Result, lot?: Result): string {
+    const { region, land } = road;
+    if (!land) return '';
+
+    const num = land.number1 + (land.number2 ? `-${land.number2}` : '');
+    const base = `${region.area1.name} ${region.area2.name} ${land.name} ${num}`;
+
+    const dongName = lot?.land?.name;
+    const building = land.addition0?.value;
+    const extras = [dongName, building].filter(Boolean).join(', ');
+    return extras ? `${base} (${extras})` : base;
+  }
+
+  private composeLotAddr(lot: Result): string {
+    const { region, land } = lot;
+    const dong = region.area3?.name || land?.name || '';
+    const num1 = land?.number1 ?? '';
+    const num2 = land?.number2 ? `-${land.number2}` : '';
+    return `${region.area1.name} ${region.area2.name} ${dong} ${num1}${num2}`;
+  }
+
+  private getAuthHeaders() {
+    return {
+      'X-NCP-APIGW-API-KEY-ID': this.clientId,
+      'X-NCP-APIGW-API-KEY': this.clientSecret,
+    };
   }
 }

@@ -37,11 +37,4 @@ export class CreateHiveReportDto {
   })
   @IsLongitude()
   longitude: number;
-
-  @ApiProperty({
-    description: '벌집 위치 (사용자 현위치 - 도로명주소)',
-    example: '종로구 청운동 1-1',
-  })
-  @IsString()
-  roadAddress: string;
 }
