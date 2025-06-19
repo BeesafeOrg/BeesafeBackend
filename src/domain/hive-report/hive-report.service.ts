@@ -87,7 +87,7 @@ export class HiveReportService {
   async finalizeReport(
     memberId: string,
     dto: CreateHiveReportDto,
-  ): Promise<void> {
+  ): Promise<{ address: string }> {
     const report = await this.hiveReportRepo.findOne({
       where: { id: dto.hiveReportId },
       relations: ['actions', 'actions.member'],
@@ -161,6 +161,7 @@ export class HiveReportService {
         (e as Error).message,
       );
     }
+    return { address };
   }
 
   async findMyReports(

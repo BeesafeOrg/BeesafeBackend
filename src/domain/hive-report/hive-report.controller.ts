@@ -88,8 +88,11 @@ export class HiveReportController {
   async createFinalReport(
     @Req() req: RequestMember,
     @Body() createDto: CreateHiveReportDto,
-  ): Promise<void> {
-    await this.hiveReportService.finalizeReport(req.user.memberId, createDto);
+  ): Promise<{ address: string }> {
+    return await this.hiveReportService.finalizeReport(
+      req.user.memberId,
+      createDto,
+    );
   }
 
   @Get('me')
