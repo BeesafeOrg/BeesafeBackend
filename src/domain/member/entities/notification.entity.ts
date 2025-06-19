@@ -31,5 +31,5 @@ export class Notification extends BaseEntity {
   hiveReport?: HiveReport;
 
   @Column({ nullable: true })
-  roadAddress: string;
+  address: string;
 }
